@@ -1,4 +1,5 @@
 import { TryCatch } from "../utils/TryCatch.js";
+import type { Request, Response, NextFunction } from "express";
 import dotenv from "dotenv";
 dotenv.config();
 import ErrorHandler from "../utils/errorHandler.js";
@@ -6,10 +7,15 @@ import { sql } from "../utils/db.js";
 import bcrypt from "bcrypt";
 import getBuffer from "../utils/buffer.js";
 import axios from "axios";
-import jwt from "jsonwebtoken";
+import jwt, { type JwtPayload } from "jsonwebtoken";
 import  { forgotPasswordTemplate } from "../template.js";
 import { publishToTopic } from "../producer.js";
 import { redisClient } from "../index.js";
+
+interface ResetTokenPayload extends JwtPayload {
+  email: string;
+  type: string;
+}
 
 export const registerUser = TryCatch(async (req, res, next) => {
   const { name, email, password, phoneNumber, role, bio } = req.body; // ✅ FIXED
@@ -158,7 +164,7 @@ export const forgotPassword = TryCatch(async (req, res, next) => {
     }
   );
   const resetLink = `${process.env.FRONTEND_URL}/reset/${resetToken}`
-  await redisClient.set(`forgot :${email}`,resetToken,{
+  await redisClient.set(`forgot:${email}`,resetToken,{
     EX:900,
   })
   const message = {
@@ -175,4 +181,81 @@ export const forgotPassword = TryCatch(async (req, res, next) => {
   res.json({
     message: "if that email exists , we have sent a reset link",
   })
+});
+
+//Reset password
+
+export const resetPassword = TryCatch(async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+
+  const { token } = req.params;
+  const { password } = req.body;
+
+  if (!token) {
+    return next(new ErrorHandler(400, "Reset token is missing"));
+  }
+
+  if (!password) {
+    return next(new ErrorHandler(400, "Password is required"));
+  }
+
+  let decoded: ResetTokenPayload;
+
+  // Step 1: Verify JWT token
+  try {
+    decoded = jwt.verify(
+      token,
+      process.env.JWT_SECRET as string
+    ) as ResetTokenPayload;
+  } catch (err) {
+    return next(new ErrorHandler(400, "Invalid or expired token"));
+  }
+
+  // Step 2: Ensure token type is correct
+  if (decoded.type !== "reset") {
+    return next(new ErrorHandler(400, "Invalid token type"));
+  }
+
+  const email = decoded.email;
+
+  // Step 3: Check Redis for stored reset token
+  const storedToken = await redisClient.get(`forgot:${email}`);
+
+  if (!storedToken) {
+    return next(new ErrorHandler(400, "Token expired or not found"));
+  }
+
+  if (storedToken !== token) {
+    return next(new ErrorHandler(400, "Token mismatch"));
+  }
+
+  // Step 4: Fetch user
+  const users = await sql`
+    SELECT user_id FROM users WHERE email = ${email}
+  `;
+
+  if (users.length === 0) {
+    return next(new ErrorHandler(404, "User not found"));
+  }
+
+  const user = users[0] as { user_id: number };
+
+  // Step 5: Update password
+  const hashedPassword = await bcrypt.hash(password, 10);
+
+  await sql`
+    UPDATE users 
+    SET password = ${hashedPassword}
+    WHERE user_id = ${user.user_id}
+  `;
+
+  // Step 6: Delete token from Redis
+  await redisClient.del(`forgot:${email}`);
+
+  res.status(200).json({
+    message: "Password updated successfully",
+  });
 });
