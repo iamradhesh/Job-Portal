@@ -1,27 +1,52 @@
-// In your multer.js file
-import type { NextFunction, Request ,Response} from 'express';
-import multer from 'multer';
+// multer.ts
+import type { NextFunction, Request, Response } from "express";
+import multer from "multer";
 
 const storage = multer.memoryStorage();
 
-const uploadFile = multer({ storage }).single('file');
+// Allowed file types (PDF + Images)
+const allowedTypes = [
+  "application/pdf",
+  "image/jpeg",
+  "image/jpg",
+  "image/png"
+];
 
-// Wrap it to add logging
-const uploadFileWithLogging = (req:Request, res:Response, next:NextFunction) => {
-  // console.log("🔍 Multer middleware hit");
-  // console.log("Headers:", req.headers);
-  // console.log("Content-Type:", req.headers['content-type']);
-  
-  uploadFile(req, res, (err) => {
-    if (err) {
-      console.log("❌ Multer error:", err);
-      return res.status(400).json({ message: "File upload error", error: err.message });
+const upload = multer({
+  storage,
+  fileFilter: (req, file, cb) => {
+    if (allowedTypes.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error("Unsupported file type"));
     }
-    // console.log("✅ Multer processed successfully");
-    // console.log("📎 req.file:", req.file);
-    // console.log("📝 req.body:", req.body);
+  },
+  limits: {
+    fileSize: 5 * 1024 * 1024 // 5 MB
+  }
+}).single("file");
+
+// ✨ Clean wrapper — no spam logging, no base64 output
+const uploadFile = (req: Request, res: Response, next: NextFunction) => {
+  upload(req, res, (err: any) => {
+    if (err) {
+      return res.status(400).json({
+        message: "File upload error",
+        error: err.message
+      });
+    }
+
+    // Safe metadata logging ONLY (no buffers)
+    if (req.file) {
+      console.log("Uploaded file:", {
+        name: req.file.originalname,
+        type: req.file.mimetype,
+        sizeKB: Math.round(req.file.size / 1024) + " KB"
+      });
+    }
+
     next();
   });
 };
 
-export default uploadFileWithLogging;
+export default uploadFile;
