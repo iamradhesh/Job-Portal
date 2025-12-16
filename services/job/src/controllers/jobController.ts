@@ -4,81 +4,83 @@ import getBuffer from "../utils/buffer.js";
 import { sql } from "../utils/db.js";
 import ErrorHandler from "../utils/errorHandler.js";
 import { TryCatch } from "../utils/TryCatch.js";
+import { get } from "http";
 
 // Create Company Controller
-export const createCompany = TryCatch(async (req: AuthenticatedRequest, res) => {
-  const user = req.user;
+export const createCompany = TryCatch(
+  async (req: AuthenticatedRequest, res) => {
+    const user = req.user;
 
-  // 🔐 Check auth
-  if (!user) {
-    throw new ErrorHandler(401, "Authentication Required");
-  }
+    // 🔐 Check auth
+    if (!user) {
+      throw new ErrorHandler(401, "Authentication Required");
+    }
 
-  if (user.role !== "recruiter") {
-    throw new ErrorHandler(403, "Only recruiters can create companies");
-  }
+    if (user.role !== "recruiter") {
+      throw new ErrorHandler(403, "Only recruiters can create companies");
+    }
 
-  const { name, description, website } = req.body;
+    const { name, description, website } = req.body;
 
-  // 📝 Validate required fields
-  if (!name || !description || !website) {
-    throw new ErrorHandler(400, "Name, description and website are required");
-  }
+    // 📝 Validate required fields
+    if (!name || !description || !website) {
+      throw new ErrorHandler(400, "Name, description and website are required");
+    }
 
-  // 🏢 Check if company already exists
-  const existingCompany = await sql`
+    // 🏢 Check if company already exists
+    const existingCompany = await sql`
         SELECT company_id FROM companies WHERE name = ${name}
     `;
 
-  if (existingCompany.length > 0) {
-    throw new ErrorHandler(
-      409,
-      `Company with this name: ${name}, already exists`
-    );
-  }
-
-  // 📁 Multer uploaded file
-  const logoFile = req.file;
-  //console.log("Logo File:", logoFile);
-
-  if (!logoFile) {
-    throw new ErrorHandler(400, "Company logo is required");
-  }
-
-  // 🧪 Convert file buffer to base64 data URI (upload service requires this)
-  const fileBuffer = getBuffer(logoFile);
-
-  // getBuffer() must return:
-  // {
-  //   content: "data:image/webp;base64,xxxx",
-  //   mimetype: "image/webp"
-  // }
-  if (!fileBuffer || !fileBuffer.content) {
-    throw new ErrorHandler(
-      500,
-      "Failed to convert logo file to base64 data URI"
-    );
-  }
-
-  // 🔥 Upload service requires EXACT JSON format:
-  // { buffer, originalname, mimetype }
-  const uploadPayload = {
-    buffer: fileBuffer.content, // full data URI: data:image/...;base64,xxx
-    originalname: logoFile.originalname,
-    mimetype: logoFile.mimetype,
-  };
-
-  // 🌐 Send to Upload Microservice (NO CHANGES NEEDED THERE)
-  const { data } = await axios.post(
-    `${process.env.UPLOAD_SERVICE}/api/utils/upload`,
-    uploadPayload,
-    {
-      headers: { "Content-Type": "application/json" },
+    if (existingCompany.length > 0) {
+      throw new ErrorHandler(
+        409,
+        `Company with this name: ${name}, already exists`
+      );
     }
-  );
 
-  // Save company to DB
-  const [newCompany] = await sql`
+    // 📁 Multer uploaded file
+    const logoFile = req.file;
+    //console.log("Logo File:", logoFile);
+
+    if (!logoFile) {
+      throw new ErrorHandler(400, "Company logo is required");
+    }
+
+    // 🧪 Convert file buffer to base64 data URI (upload service requires this)
+    const fileBuffer = getBuffer(logoFile);
+
+    // getBuffer() must return:
+    // {
+    //   content: "data:image/webp;base64,xxxx",
+    //   mimetype: "image/webp"
+    // }
+    if (!fileBuffer || !fileBuffer.content) {
+      throw new ErrorHandler(
+        500,
+        "Failed to convert logo file to base64 data URI"
+      );
+    }
+
+    // 🔥 Upload service requires EXACT JSON format:
+    // { buffer, originalname, mimetype }
+    const uploadPayload = {
+      buffer: fileBuffer.content, // full data URI: data:image/...;base64,xxx
+      originalname: logoFile.originalname,
+      mimetype: logoFile.mimetype,
+    };
+
+    // 🌐 Send to Upload Microservice (NO CHANGES NEEDED THERE)
+    const { data } = await axios.post(
+      `${process.env.UPLOAD_SERVICE}/api/utils/upload`,
+      uploadPayload,
+      {
+        headers: { "Content-Type": "application/json" },
+      }
+    );
+
+    // Save company to DB
+    const [newCompany] = await sql`
         INSERT INTO companies (
             name,
             description,
@@ -98,17 +100,18 @@ export const createCompany = TryCatch(async (req: AuthenticatedRequest, res) => 
         RETURNING *
     `;
 
-  res.status(201).json({
-    status: "Company Created Successfully.!",
-    company: newCompany,
-  });
-});
+    res.status(201).json({
+      status: "Company Created Successfully.!",
+      company: newCompany,
+    });
+  }
+);
 
 //Delete Company Controller
 export const deleteCompany = TryCatch(
   async (req: AuthenticatedRequest, res) => {
-    const user  = req.user;
-    const {companyId} = req.params;
+    const user = req.user;
+    const { companyId } = req.params;
 
     const [company] = await sql`
     SELECT logo_public_id FROM companies WHERE company_id = ${companyId} AND recruiter_id = ${user?.user_id}
@@ -117,9 +120,281 @@ export const deleteCompany = TryCatch(
     if (!company) {
       throw new ErrorHandler(404, "Company not found or unauthorized");
     }
-    await sql ` DELETE FROM companies WHERE company_id = ${companyId}`;
+    await sql` DELETE FROM companies WHERE company_id = ${companyId}`;
 
     res.status(200).json({
-        message:"Company and all associated jobs have been deleted",
-    })
+      message: "Company and all associated jobs have been deleted",
+    });
+  }
+);
+
+//Create JOB Controller
+
+export const createJob = TryCatch(async (req: AuthenticatedRequest, res) => {
+  const user = req.user;
+
+  // 🔐 Check auth
+  if (!user) {
+    throw new ErrorHandler(401, "Authentication Required");
+  }
+
+  if (user.role !== "recruiter") {
+    throw new ErrorHandler(403, "Only recruiters can create companies");
+  }
+  const {
+    title,
+    description,
+    salary,
+    location,
+    job_type,
+    openings,
+    role,
+    work_location,
+    company_id,
+  } = req.body;
+
+  // 📝 Validate required fields
+  if (
+    !title ||
+    !description ||
+    !job_type ||
+    !openings ||
+    !role ||
+    !work_location ||
+    !company_id
+  ) {
+    throw new ErrorHandler(400, "Missing required job fields");
+  }
+  const [company] = await sql`
+    SELECT company_id FROM companies WHERE company_id = ${company_id} AND recruiter_id = ${user.user_id}`;
+
+  if (!company) {
+    throw new ErrorHandler(403, "Company Not Found Or Unauthorized");
+  }
+
+  const [newJob] = await sql`
+    INSERT INTO jobs (title, description, salary, location, job_type, openings, role, work_location, company_id, posted_by_recruiter_id)
+    VALUES (
+      ${title},
+      ${description},
+      ${salary},
+      ${location},
+      ${job_type},
+      ${openings},
+      ${role},
+      ${work_location},
+      ${company_id},
+      ${user.user_id}
+    )
+    RETURNING *`;
+
+  res.status(201).json({
+    status: "Job Created Successfully.!",
+    job: newJob,
   });
+});
+
+//Update Job Controller:-
+
+export const updateJob = TryCatch(async (req: AuthenticatedRequest, res) => {
+  const user = req.user;
+  const { jobId } = req.params;
+
+  // Auth checks
+  if (!user) throw new ErrorHandler(401, "Authentication Required");
+  if (user.role !== "recruiter")
+    throw new ErrorHandler(403, "Only recruiters can update jobs");
+  if (!jobId) throw new ErrorHandler(400, "Job ID is required");
+
+  // 1️⃣ Fetch existing job
+  const [existingJob] = await sql`
+    SELECT * FROM jobs WHERE job_id = ${jobId}
+  `;
+
+  if (!existingJob) throw new ErrorHandler(404, "Job not found");
+  //console.log("Existing Job", existingJob);
+  // Check ownership
+  if (existingJob.posted_by_recruiter_id !== user.user_id) {
+    throw new ErrorHandler(403, "Unauthorized to update this job");
+  }
+
+  // 2️⃣ Merge new values with old ones (fallback logic)
+  const updatedFields = {
+    title: req.body.title ?? existingJob.title,
+    description: req.body.description ?? existingJob.description,
+    salary: req.body.salary ?? existingJob.salary,
+    location: req.body.location ?? existingJob.location,
+    job_type: req.body.job_type ?? existingJob.job_type,
+    openings: req.body.openings ?? existingJob.openings,
+    role: req.body.role ?? existingJob.role,
+    work_location: req.body.work_location ?? existingJob.work_location,
+    company_id: req.body.company_id ?? existingJob.company_id,
+    is_active: req.body.is_active ?? existingJob.is_active,
+  };
+
+  // 3️⃣ Update dynamically
+  const [updatedJob] = await sql`
+    UPDATE jobs SET
+      title = ${updatedFields.title},
+      description = ${updatedFields.description},
+      salary = ${updatedFields.salary},
+      location = ${updatedFields.location},
+      job_type = ${updatedFields.job_type},
+      openings = ${updatedFields.openings},
+      role = ${updatedFields.role},
+      work_location = ${updatedFields.work_location},
+      company_id = ${updatedFields.company_id},
+      is_active = ${updatedFields.is_active}
+    WHERE job_id = ${jobId}
+    RETURNING *
+  `;
+
+  res.status(200).json({
+    status: "Job Updated Successfully.!",
+    job: updatedJob,
+  });
+});
+
+//Delete Job Controller
+
+export const deleteJobs = TryCatch(async(req: AuthenticatedRequest, res) => {
+  const user = req.user;
+  const { jobId } = req.params;
+
+  //Auth Check:-
+
+  if(!user){
+    throw new ErrorHandler(401, "Authentication Required");
+  }
+  if(user.role !== "recruiter"){
+    throw new ErrorHandler(403, "Only recruiters can delete jobs");
+  }
+  if(!jobId){
+    throw new ErrorHandler(400, "Job ID is required");
+  }
+  //Fetch Existing Job:-
+  const [existingJobs] = await sql`
+    SELECT * FROM jobs WHERE job_id = ${jobId}
+  `;
+  if(!existingJobs){
+    throw new ErrorHandler(404, "Job Not Found");
+  }
+  //Check OWnership:
+  if(existingJobs.posted_by_recruiter_id !== user.user_id){
+    throw new ErrorHandler(403, "Unauthorized to delete this job");
+  }
+  //Delete Job:-
+  await sql`
+    DELETE FROM jobs WHERE job_id = ${jobId}
+  `;
+  res.status(200).json({
+    status: "Job Deleted Successfully.!",
+  });
+});
+
+//Get ALL Companies By Recruiters Controller:-
+
+export const getAllCompanies = TryCatch(async(req: AuthenticatedRequest, res) => {
+    const companies = await sql` SELECT * FROM companies WHERE recruiter_id = ${req.user?.user_id} `;
+    res.status(200).json({
+        status: "Companies Fetched Successfully.!",
+        companies
+    });
+});
+
+//Get Single Company Details By ID:-
+
+export const getCompanyDetails = TryCatch(async (req: AuthenticatedRequest, res) => {
+  const { id } = req.params;
+
+  if (!id) {
+    throw new ErrorHandler(400, "Company ID is required");
+  }
+
+  // Fetch company details + jobs of that company
+  const [companyData] = await sql`
+    SELECT 
+      c.*,
+      COALESCE(
+        (
+          SELECT json_agg(j.*)
+          FROM jobs j
+          WHERE j.company_id = c.company_id
+        ),
+        '[]'::json
+      ) AS jobs
+    FROM companies c
+    WHERE c.company_id = ${id};
+  `;
+
+  if (!companyData) {
+    throw new ErrorHandler(404, "Company Not Found");
+  }
+
+  res.status(200).json({
+    status: "success",
+    company: companyData,
+  });
+});
+
+//Get ALL Active Jobs Controller:-
+
+export const getAllActiveJobs = TryCatch(async (req: AuthenticatedRequest, res) => {
+  const { title, location } = req.query as {
+    title?: string;
+    location?: string;
+  };
+
+  let queryString = `
+    SELECT 
+      j.job_id,
+      j.title,
+      j.description,
+      j.salary,
+      j.location,
+      j.job_type,
+      j.openings,
+      j.role,
+      j.work_location,
+      c.name AS company_name,
+      c.logo AS company_logo,
+      c.company_id
+    FROM jobs j
+    JOIN companies c ON j.company_id = c.company_id
+    WHERE j.is_active = true
+  `;
+
+  const values: any[] = [];
+  let paramIndex = 1;
+
+  if (title) {
+    queryString += ` AND j.title ILIKE $${paramIndex}`;
+    values.push(`%${title}%`);
+    paramIndex++;
+  }
+
+  if (location) {
+    queryString += ` AND j.location ILIKE $${paramIndex}`;
+    values.push(`%${location}%`);
+    paramIndex++;
+  }
+  queryString += ` ORDER BY j.created_at DESC`;
+
+  const activeJobs = await sql.query(queryString, values) as any[];
+
+  res.status(200).json({
+    status: "Active Jobs Fetched Successfully.!",
+    activeJobs
+  });
+});
+
+//Get Single Job Details By ID Controller:-
+
+export const getSingleJob = TryCatch(async (req: AuthenticatedRequest, res) => {
+  const [job] = await sql`SELECT * FROM jobs WHERE job_id = ${req.params.jobId} `;
+  res.status(200).json({
+    status: "Job Fetched Successfully.!",
+    job
+  });
+});
+
