@@ -5,6 +5,8 @@ import { sql } from "../utils/db.js";
 import ErrorHandler from "../utils/errorHandler.js";
 import { TryCatch } from "../utils/TryCatch.js";
 import { get } from "http";
+import { applicationStatusUpdateTemplate } from "../template.js";
+import { publishToTopic } from "../producer.js";
 
 // Create Company Controller
 export const createCompany = TryCatch(
@@ -257,30 +259,30 @@ export const updateJob = TryCatch(async (req: AuthenticatedRequest, res) => {
 
 //Delete Job Controller
 
-export const deleteJobs = TryCatch(async(req: AuthenticatedRequest, res) => {
+export const deleteJobs = TryCatch(async (req: AuthenticatedRequest, res) => {
   const user = req.user;
   const { jobId } = req.params;
 
   //Auth Check:-
 
-  if(!user){
+  if (!user) {
     throw new ErrorHandler(401, "Authentication Required");
   }
-  if(user.role !== "recruiter"){
+  if (user.role !== "recruiter") {
     throw new ErrorHandler(403, "Only recruiters can delete jobs");
   }
-  if(!jobId){
+  if (!jobId) {
     throw new ErrorHandler(400, "Job ID is required");
   }
   //Fetch Existing Job:-
   const [existingJobs] = await sql`
     SELECT * FROM jobs WHERE job_id = ${jobId}
   `;
-  if(!existingJobs){
+  if (!existingJobs) {
     throw new ErrorHandler(404, "Job Not Found");
   }
   //Check OWnership:
-  if(existingJobs.posted_by_recruiter_id !== user.user_id){
+  if (existingJobs.posted_by_recruiter_id !== user.user_id) {
     throw new ErrorHandler(403, "Unauthorized to delete this job");
   }
   //Delete Job:-
@@ -294,25 +296,29 @@ export const deleteJobs = TryCatch(async(req: AuthenticatedRequest, res) => {
 
 //Get ALL Companies By Recruiters Controller:-
 
-export const getAllCompanies = TryCatch(async(req: AuthenticatedRequest, res) => {
-    const companies = await sql` SELECT * FROM companies WHERE recruiter_id = ${req.user?.user_id} `;
+export const getAllCompanies = TryCatch(
+  async (req: AuthenticatedRequest, res) => {
+    const companies =
+      await sql` SELECT * FROM companies WHERE recruiter_id = ${req.user?.user_id} `;
     res.status(200).json({
-        status: "Companies Fetched Successfully.!",
-        companies
+      status: "Companies Fetched Successfully.!",
+      companies,
     });
-});
+  }
+);
 
 //Get Single Company Details By ID:-
 
-export const getCompanyDetails = TryCatch(async (req: AuthenticatedRequest, res) => {
-  const { id } = req.params;
+export const getCompanyDetails = TryCatch(
+  async (req: AuthenticatedRequest, res) => {
+    const { id } = req.params;
 
-  if (!id) {
-    throw new ErrorHandler(400, "Company ID is required");
-  }
+    if (!id) {
+      throw new ErrorHandler(400, "Company ID is required");
+    }
 
-  // Fetch company details + jobs of that company
-  const [companyData] = await sql`
+    // Fetch company details + jobs of that company
+    const [companyData] = await sql`
     SELECT 
       c.*,
       COALESCE(
@@ -327,25 +333,27 @@ export const getCompanyDetails = TryCatch(async (req: AuthenticatedRequest, res)
     WHERE c.company_id = ${id};
   `;
 
-  if (!companyData) {
-    throw new ErrorHandler(404, "Company Not Found");
-  }
+    if (!companyData) {
+      throw new ErrorHandler(404, "Company Not Found");
+    }
 
-  res.status(200).json({
-    status: "success",
-    company: companyData,
-  });
-});
+    res.status(200).json({
+      status: "success",
+      company: companyData,
+    });
+  }
+);
 
 //Get ALL Active Jobs Controller:-
 
-export const getAllActiveJobs = TryCatch(async (req: AuthenticatedRequest, res) => {
-  const { title, location } = req.query as {
-    title?: string;
-    location?: string;
-  };
+export const getAllActiveJobs = TryCatch(
+  async (req: AuthenticatedRequest, res) => {
+    const { title, location } = req.query as {
+      title?: string;
+      location?: string;
+    };
 
-  let queryString = `
+    let queryString = `
     SELECT 
       j.job_id,
       j.title,
@@ -364,37 +372,112 @@ export const getAllActiveJobs = TryCatch(async (req: AuthenticatedRequest, res) 
     WHERE j.is_active = true
   `;
 
-  const values: any[] = [];
-  let paramIndex = 1;
+    const values: any[] = [];
+    let paramIndex = 1;
 
-  if (title) {
-    queryString += ` AND j.title ILIKE $${paramIndex}`;
-    values.push(`%${title}%`);
-    paramIndex++;
+    if (title) {
+      queryString += ` AND j.title ILIKE $${paramIndex}`;
+      values.push(`%${title}%`);
+      paramIndex++;
+    }
+
+    if (location) {
+      queryString += ` AND j.location ILIKE $${paramIndex}`;
+      values.push(`%${location}%`);
+      paramIndex++;
+    }
+    queryString += ` ORDER BY j.created_at DESC`;
+
+    const activeJobs = (await sql.query(queryString, values)) as any[];
+
+    res.status(200).json({
+      status: "Active Jobs Fetched Successfully.!",
+      activeJobs,
+    });
   }
-
-  if (location) {
-    queryString += ` AND j.location ILIKE $${paramIndex}`;
-    values.push(`%${location}%`);
-    paramIndex++;
-  }
-  queryString += ` ORDER BY j.created_at DESC`;
-
-  const activeJobs = await sql.query(queryString, values) as any[];
-
-  res.status(200).json({
-    status: "Active Jobs Fetched Successfully.!",
-    activeJobs
-  });
-});
+);
 
 //Get Single Job Details By ID Controller:-
 
 export const getSingleJob = TryCatch(async (req: AuthenticatedRequest, res) => {
-  const [job] = await sql`SELECT * FROM jobs WHERE job_id = ${req.params.jobId} `;
+  const [job] =
+    await sql`SELECT * FROM jobs WHERE job_id = ${req.params.jobId} `;
   res.status(200).json({
     status: "Job Fetched Successfully.!",
-    job
+    job,
   });
 });
 
+//Get All APplications For A Job Controller:-
+export const getAllApplicationsForJob = TryCatch(
+  async (req: AuthenticatedRequest, res) => {
+    const user = req.user;
+    const { jobId } = req.params;
+
+    // Auth checks
+    if (!user) throw new ErrorHandler(401, "Authentication Required");
+    if (user.role !== "recruiter")
+      throw new ErrorHandler(403, "Only recruiters can update jobs");
+    if (!jobId) throw new ErrorHandler(400, "Job ID is required");
+
+    const [job] = await sql `SELECT posted_by_recruiter_id FROM jobs WHERE job_id = ${jobId} `;
+
+    if(!job)
+    {
+      throw new ErrorHandler(404, "Job Not Found");
+    }
+    if (job.posted_by_recruiter_id !== user.user_id) {
+      throw new ErrorHandler(403, "Unauthorized to view applications for this job");
+    }
+    const applications = await sql `SELECT * FROM applications WHERE job_id = ${jobId} ORDER BY subscribe DESC, applied_at ASC`;
+
+    res.status(200).json({
+      status: "Applications Fetched Successfully.!",
+      applications,
+    });
+  }
+);
+
+//Update Application Status Controller:-
+
+export const updateApplication = TryCatch(async (req: AuthenticatedRequest, res) => {
+   const user = req.user;
+    // Auth checks
+    if (!user) throw new ErrorHandler(401, "Authentication Required");
+    if (user.role !== "recruiter")
+    {
+      throw new ErrorHandler(403, "Only recruiters can update jobs");
+    }
+    const { applicationId } = req.params;
+    const [application] = await sql `SELECT * FROM applications WHERE application_id= ${applicationId} `;
+    if(!application)
+    {
+      throw new ErrorHandler(404, "Application Not Found");
+    }
+    const [job] = await sql `SELECT posted_by_recruiter_id,title FROM jobs where job_id = ${application.job_id} `;
+   if(!job)
+   {
+    throw new ErrorHandler(404, "Job Not Found For This Application");
+   }
+
+   if (job.posted_by_recruiter_id !== user.user_id) {
+      throw new ErrorHandler(403, "Unauthorized to update this application");
+   }
+
+   const [updatedApplication] = await sql `UPDATE applications SET status = ${req.body.status} WHERE application_id = ${applicationId} RETURNING * `;
+   const message = {
+    to: application.applicant_email,
+    subject: `Your Application for ${job.title} - Status Update - Job portal`,
+    html: applicationStatusUpdateTemplate(job.title),
+   };
+   publishToTopic("send-mail",message).catch((err) => {
+    console.error("Failed to publish message to topic:", err);
+   });
+
+    res.status(200).json({
+      status: "Application Status Updated Successfully.!",
+      job,
+      updatedApplication,
+    });
+  }
+);
