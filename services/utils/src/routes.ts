@@ -3,6 +3,7 @@ import express, { type Request, type Response } from "express";
 import { v2 as cloudinary } from "cloudinary";
 import dotenv from "dotenv";
 import { generateCareerAdvice } from "./controller/careerController.js";
+import { analyseResume } from "./controller/resumeAnalyser.js";
 
 dotenv.config();
 const router = express.Router();
@@ -102,5 +103,6 @@ router.post("/upload", async (req: Request, res: Response) => {
 //GenAI ROute:-
 router.post("/career",generateCareerAdvice);
 
-
+//Resume ANalysis Route:-
+router.post("/resume-analyser",analyseResume);
 export default router;

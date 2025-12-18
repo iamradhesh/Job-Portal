@@ -1,6 +1,6 @@
 import type { Request, Response } from "express";
 import { buildCareerPrompt } from "../prompts/career.prompt.js";
-import { generateContent } from "../services/genaiService.js";
+import { generateTextContent } from "../services/genaiService.js";
 import { parseJsonResponse } from "../parsers/jsonParser.js";
 
 export const generateCareerAdvice = async (req: Request, res: Response) => {
@@ -15,7 +15,7 @@ export const generateCareerAdvice = async (req: Request, res: Response) => {
 
     const prompt = buildCareerPrompt(skills);
 
-    rawResponse = await generateContent(prompt); // 👈 capture raw text here
+    rawResponse = await generateTextContent(prompt); // 👈 capture raw text here
 
     const parsed = parseJsonResponse(rawResponse);
 
