@@ -1,0 +1,1801 @@
+{
+	"info": {
+		"_postman_id": "89cc186d-bec2-4f46-acc1-5040d968c5ae",
+		"name": "Job-Portal",
+		"description": "# Job Portal API Documentation\n\n## Overview\n\nThe Job Portal API is a comprehensive platform that connects job seekers with recruiters. It provides endpoints for user authentication, profile management, company management, job postings, and application tracking.\n\n## Base URLs\n\nThe API is organized into three microservices:\n\n- **Authentication Service**: `http://localhost:5000/api/auth`\n    \n- **User Service**: `http://localhost:5002/api/user`\n    \n- **Job Service**: `http://localhost:5003/api/job`\n    \n\n## Authentication\n\nMost endpoints require authentication using a Bearer token. After successful login or registration, you'll receive an access token that must be included in the Authorization header:\n\n```\nAuthorization: Bearer {{accessToken}}\n\n ```\n\nThe `accessToken` variable is automatically set after login and used across authenticated requests.\n\n## API Features\n\n### Authentication & Authorization\n\n- User registration with role-based access (Job Seeker/Recruiter)\n    \n- Secure login with JWT token generation\n    \n- Password reset functionality via email\n    \n\n### User Management\n\n- Profile creation and updates\n    \n- Resume and profile picture uploads\n    \n- Skill management\n    \n- View application history\n    \n\n### Company Management (Recruiter Only)\n\n- Create and manage company profiles\n    \n- Update company information\n    \n- Delete companies\n    \n\n### Job Management\n\n- Post new job openings (Recruiter)\n    \n- Update and delete job postings (Recruiter)\n    \n- Browse active job listings (Job Seeker)\n    \n- Search jobs by title and location\n    \n- View detailed job information\n    \n\n### Application Management\n\n- Apply for jobs with resume submission\n    \n- Track application status\n    \n- View all applications (Job Seeker)\n    \n- View applications per job (Recruiter)\n    \n\n## Response Format\n\nAll API responses follow a consistent JSON format with appropriate HTTP status codes:\n\n- `200 OK` - Successful requests\n    \n- `201 Created` - Successful resource creation\n    \n- `400 Bad Request` - Invalid input\n    \n- `401 Unauthorized` - Missing or invalid authentication\n    \n- `403 Forbidden` - Insufficient permissions\n    \n- `404 Not Found` - Resource not found\n    \n- `500 Internal Server Error` - Server errors\n    \n\n## Getting Started\n\n1. Register a new user account (specify role: job_seeker or recruiter)\n    \n2. Login to receive your access token\n    \n3. Use the token in subsequent requests\n    \n4. Explore endpoints based on your role",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "24964312"
+	},
+	"item": [
+		{
+			"name": "Utilities",
+			"item": []
+		},
+		{
+			"name": "Job Management",
+			"item": []
+		},
+		{
+			"name": "User Management",
+			"item": []
+		},
+		{
+			"name": "Authentication",
+			"item": []
+		},
+		{
+			"name": "Company Management",
+			"item": []
+		},
+		{
+			"name": "Application Management",
+			"item": []
+		},
+		{
+			"name": "Register User",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "name",
+							"value": "Vimlesh",
+							"type": "text"
+						},
+						{
+							"key": "email",
+							"value": "Vimal@gmail.com",
+							"type": "text"
+						},
+						{
+							"key": "password",
+							"value": "12345678",
+							"type": "text"
+						},
+						{
+							"key": "phoneNumber",
+							"value": "1212121290",
+							"type": "text"
+						},
+						{
+							"key": "role",
+							"value": "jobseeker",
+							"type": "text"
+						},
+						{
+							"key": "bio",
+							"value": "Hello I am Vimal This side",
+							"type": "text"
+						},
+						{
+							"key": "file",
+							"type": "file",
+							"src": "/C:/Users/Pc/Downloads/Radhesh_Pandey_Resume_SDE_1_6.pdf"
+						}
+					]
+				},
+				"url": {
+					"raw": "http://localhost:5000/api/auth/register",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "5000",
+					"path": [
+						"api",
+						"auth",
+						"register"
+					]
+				},
+				"description": "Register a new user account in the Job Portal system.\n\n**Authentication:** Not required\n\n**Request Body:**\n```json\n{\n  \"name\": \"string\",\n  \"email\": \"string\",\n  \"password\": \"string\",\n  \"role\": \"job_seeker\" | \"recruiter\",\n  \"phone\": \"string\" (optional)\n}\n```\n\n**Response (201 Created):**\n```json\n{\n  \"status\": \"success\",\n  \"message\": \"User registered successfully\",\n  \"user\": {\n    \"id\": \"number\",\n    \"name\": \"string\",\n    \"email\": \"string\",\n    \"role\": \"string\"\n  },\n  \"accessToken\": \"string\"\n}\n```\n\n**Notes:**\n- Role must be either \"job_seeker\" or \"recruiter\"\n- Email must be unique\n- Password should meet security requirements\n- Access token is returned upon successful registration"
+			},
+			"response": [
+				{
+					"name": "Successful Registration - Job Seeker",
+					"originalRequest": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\"fullName\":\"John Doe\",\"email\":\"john.doe@example.com\",\"password\":\"SecurePass123!\",\"phoneNumber\":\"+1234567890\",\"role\":\"job_seeker\"}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:5000/api/auth/register",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5000",
+							"path": [
+								"api",
+								"auth",
+								"register"
+							]
+						}
+					},
+					"status": "Created",
+					"code": 201,
+					"_postman_previewlanguage": "json",
+					"header": [
+						{
+							"key": "Content-Type",
+							"value": "application/json",
+							"description": ""
+						}
+					],
+					"cookie": [],
+					"body": "{\n  \"success\": true,\n  \"message\": \"User registered successfully\",\n  \"data\": {\n    \"user\": {\n      \"id\": 1,\n      \"fullName\": \"John Doe\",\n      \"email\": \"john.doe@example.com\",\n      \"phoneNumber\": \"+1234567890\",\n      \"role\": \"job_seeker\",\n      \"createdAt\": \"2024-01-15T10:30:00.000Z\"\n    },\n    \"accessToken\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEsImVtYWlsIjoiam9obi5kb2VAZXhhbXBsZS5jb20iLCJyb2xlIjoiam9iX3NlZWtlciIsImlhdCI6MTcwNTMxNzAwMCwiZXhwIjoxNzA1NDAzNDAwfQ.example_token_signature\"\n  }\n}"
+				},
+				{
+					"name": "Successful Registration - Recruiter",
+					"originalRequest": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\"fullName\":\"Jane Smith\",\"email\":\"jane.smith@example.com\",\"password\":\"SecurePass456!\",\"phoneNumber\":\"+1987654321\",\"role\":\"recruiter\"}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:5000/api/auth/register",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5000",
+							"path": [
+								"api",
+								"auth",
+								"register"
+							]
+						}
+					},
+					"status": "Created",
+					"code": 201,
+					"_postman_previewlanguage": "json",
+					"header": [
+						{
+							"key": "Content-Type",
+							"value": "application/json",
+							"description": ""
+						}
+					],
+					"cookie": [],
+					"body": "{\n  \"success\": true,\n  \"message\": \"User registered successfully\",\n  \"data\": {\n    \"user\": {\n      \"id\": 2,\n      \"fullName\": \"Jane Smith\",\n      \"email\": \"jane.smith@example.com\",\n      \"phoneNumber\": \"+1987654321\",\n      \"role\": \"recruiter\",\n      \"createdAt\": \"2024-01-15T11:00:00.000Z\"\n    },\n    \"accessToken\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjIsImVtYWlsIjoiamFuZS5zbWl0aEBleGFtcGxlLmNvbSIsInJvbGUiOiJyZWNydWl0ZXIiLCJpYXQiOjE3MDUzMTg4MDAsImV4cCI6MTcwNTQwNTIwMH0.example_token_signature\"\n  }\n}"
+				},
+				{
+					"name": "Error - Email Already Exists",
+					"originalRequest": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\"fullName\":\"Test User\",\"email\":\"existing@example.com\",\"password\":\"Password123!\",\"phoneNumber\":\"+1234567890\",\"role\":\"job_seeker\"}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:5000/api/auth/register",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5000",
+							"path": [
+								"api",
+								"auth",
+								"register"
+							]
+						}
+					},
+					"status": "Bad Request",
+					"code": 400,
+					"_postman_previewlanguage": "json",
+					"header": [
+						{
+							"key": "Content-Type",
+							"value": "application/json",
+							"description": ""
+						}
+					],
+					"cookie": [],
+					"body": "{\n  \"success\": false,\n  \"message\": \"User with this email already exists\",\n  \"error\": \"DUPLICATE_EMAIL\"\n}"
+				}
+			]
+		},
+		{
+			"name": "Login User",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"email\":\"suresh@gmail.com\",\r\n    \"password\":\"12345678\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:5000/api/auth/login",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "5000",
+					"path": [
+						"api",
+						"auth",
+						"login"
+					]
+				},
+				"description": "Authenticate a user and receive an access token for subsequent API requests.\n\n**Authentication:** Not required\n\n**Request Body:**\n```json\n{\n  \"email\": \"string\",\n  \"password\": \"string\"\n}\n```\n\n**Response (200 OK):**\n```json\n{\n  \"status\": \"success\",\n  \"message\": \"Login successful\",\n  \"user\": {\n    \"id\": \"number\",\n    \"name\": \"string\",\n    \"email\": \"string\",\n    \"role\": \"string\"\n  },\n  \"accessToken\": \"string\"\n}\n```\n\n**Notes:**\n- Store the returned accessToken for use in authenticated requests\n- Token should be included in Authorization header as: `Bearer {{accessToken}}`\n- Invalid credentials will return 401 Unauthorized"
+			},
+			"response": [
+				{
+					"name": "Successful Login",
+					"originalRequest": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\"email\":\"john.doe@example.com\",\"password\":\"SecurePass123!\"}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:5000/api/auth/login",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5000",
+							"path": [
+								"api",
+								"auth",
+								"login"
+							]
+						}
+					},
+					"status": "OK",
+					"code": 200,
+					"_postman_previewlanguage": "json",
+					"header": [
+						{
+							"key": "Content-Type",
+							"value": "application/json",
+							"description": ""
+						}
+					],
+					"cookie": [],
+					"body": "{\n  \"success\": true,\n  \"message\": \"Login successful\",\n  \"data\": {\n    \"user\": {\n      \"id\": 1,\n      \"fullName\": \"John Doe\",\n      \"email\": \"john.doe@example.com\",\n      \"phoneNumber\": \"+1234567890\",\n      \"role\": \"job_seeker\",\n      \"profile\": {\n        \"bio\": \"Experienced software developer\",\n        \"skills\": [\"JavaScript\", \"React\", \"Node.js\"],\n        \"resume\": \"https://storage.example.com/resumes/john-doe-resume.pdf\",\n        \"profilePicture\": \"https://storage.example.com/profiles/john-doe.jpg\"\n      }\n    },\n    \"accessToken\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEsImVtYWlsIjoiam9obi5kb2VAZXhhbXBsZS5jb20iLCJyb2xlIjoiam9iX3NlZWtlciIsImlhdCI6MTcwNTMxNzAwMCwiZXhwIjoxNzA1NDAzNDAwfQ.example_token_signature\"\n  }\n}"
+				},
+				{
+					"name": "Error - Invalid Credentials",
+					"originalRequest": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\"email\":\"john.doe@example.com\",\"password\":\"WrongPassword123!\"}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:5000/api/auth/login",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5000",
+							"path": [
+								"api",
+								"auth",
+								"login"
+							]
+						}
+					},
+					"status": "Unauthorized",
+					"code": 401,
+					"_postman_previewlanguage": "json",
+					"header": [
+						{
+							"key": "Content-Type",
+							"value": "application/json",
+							"description": ""
+						}
+					],
+					"cookie": [],
+					"body": "{\n  \"success\": false,\n  \"message\": \"Invalid email or password\",\n  \"error\": \"INVALID_CREDENTIALS\"\n}"
+				}
+			]
+		},
+		{
+			"name": "Forgot Password",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"email\":\"Vimal@gmail.com\"\r\n    \r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:5000/api/auth/forgot",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "5000",
+					"path": [
+						"api",
+						"auth",
+						"forgot"
+					]
+				},
+				"description": "Request a password reset link to be sent to the user's registered email address.\n\n**Authentication:** Not required\n\n**Request Body:**\n```json\n{\n  \"email\": \"string\"\n}\n```\n\n**Response (200 OK):**\n```json\n{\n  \"status\": \"success\",\n  \"message\": \"Password reset link sent to email\"\n}\n```\n\n**Notes:**\n- A reset token will be generated and sent via email\n- The reset link contains a JWT token valid for a limited time\n- Use the token from the email in the Reset Password endpoint"
+			},
+			"response": [
+				{
+					"name": "Successful Password Reset Request",
+					"originalRequest": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\"email\":\"john.doe@example.com\"}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:5000/api/auth/forgot",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5000",
+							"path": [
+								"api",
+								"auth",
+								"forgot"
+							]
+						}
+					},
+					"status": "OK",
+					"code": 200,
+					"_postman_previewlanguage": "json",
+					"header": [
+						{
+							"key": "Content-Type",
+							"value": "application/json",
+							"description": ""
+						}
+					],
+					"cookie": [],
+					"body": "{\n  \"success\": true,\n  \"message\": \"Password reset link has been sent to your email\",\n  \"data\": {\n    \"email\": \"john.doe@example.com\",\n    \"resetTokenExpiry\": \"2024-01-15T12:30:00.000Z\"\n  }\n}"
+				},
+				{
+					"name": "Error - User Not Found",
+					"originalRequest": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\"email\":\"nonexistent@example.com\"}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:5000/api/auth/forgot",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5000",
+							"path": [
+								"api",
+								"auth",
+								"forgot"
+							]
+						}
+					},
+					"status": "Not Found",
+					"code": 404,
+					"_postman_previewlanguage": "json",
+					"header": [
+						{
+							"key": "Content-Type",
+							"value": "application/json",
+							"description": ""
+						}
+					],
+					"cookie": [],
+					"body": "{\n  \"success\": false,\n  \"message\": \"No user found with this email address\",\n  \"error\": \"USER_NOT_FOUND\"\n}"
+				}
+			]
+		},
+		{
+			"name": "Reset Password",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"password\":\"123456789\"\r\n    \r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:5000/api/auth/reset/eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6IlZpbWFsQGdtYWlsLmNvbSIsInR5cGUiOiJyZXNldCIsImlhdCI6MTc2NDc1MjE2MywiZXhwIjoxNzY0NzUzMDYzfQ.jeaYgrqWohXgEshAOO3Fp5ltaYImMcgkrvHIHiEeYBM",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "5000",
+					"path": [
+						"api",
+						"auth",
+						"reset",
+						"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6IlZpbWFsQGdtYWlsLmNvbSIsInR5cGUiOiJyZXNldCIsImlhdCI6MTc2NDc1MjE2MywiZXhwIjoxNzY0NzUzMDYzfQ.jeaYgrqWohXgEshAOO3Fp5ltaYImMcgkrvHIHiEeYBM"
+					]
+				},
+				"description": "Reset user password using the token received via email from the Forgot Password endpoint.\n\n**Authentication:** Reset token required (in URL path)\n\n**URL Parameter:**\n- `token` - JWT reset token received via email\n\n**Request Body:**\n```json\n{\n  \"newPassword\": \"string\",\n  \"confirmPassword\": \"string\"\n}\n```\n\n**Response (200 OK):**\n```json\n{\n  \"status\": \"success\",\n  \"message\": \"Password reset successfully\"\n}\n```\n\n**Notes:**\n- Token is embedded in the URL path\n- newPassword and confirmPassword must match\n- Token expires after a set time period\n- After successful reset, user must login with new password"
+			},
+			"response": [
+				{
+					"name": "Successful Password Reset",
+					"originalRequest": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\"newPassword\":\"NewSecurePass123!\"}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:5000/api/auth/reset/eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImpvaG4uZG9lQGV4YW1wbGUuY29tIiwidHlwZSI6InJlc2V0IiwiaWF0IjoxNzA1MzE3MDAwLCJleHAiOjE3MDUzMjA2MDB9.example_signature",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5000",
+							"path": [
+								"api",
+								"auth",
+								"reset",
+								"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImpvaG4uZG9lQGV4YW1wbGUuY29tIiwidHlwZSI6InJlc2V0IiwiaWF0IjoxNzA1MzE3MDAwLCJleHAiOjE3MDUzMjA2MDB9.example_signature"
+							]
+						}
+					},
+					"status": "OK",
+					"code": 200,
+					"_postman_previewlanguage": "json",
+					"header": [
+						{
+							"key": "Content-Type",
+							"value": "application/json",
+							"description": ""
+						}
+					],
+					"cookie": [],
+					"body": "{\n  \"success\": true,\n  \"message\": \"Password has been reset successfully\",\n  \"data\": {\n    \"email\": \"john.doe@example.com\"\n  }\n}"
+				},
+				{
+					"name": "Error - Invalid or Expired Token",
+					"originalRequest": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\"newPassword\":\"NewSecurePass123!\"}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:5000/api/auth/reset/invalid_or_expired_token",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5000",
+							"path": [
+								"api",
+								"auth",
+								"reset",
+								"invalid_or_expired_token"
+							]
+						}
+					},
+					"status": "Bad Request",
+					"code": 400,
+					"_postman_previewlanguage": "json",
+					"header": [
+						{
+							"key": "Content-Type",
+							"value": "application/json",
+							"description": ""
+						}
+					],
+					"cookie": [],
+					"body": "{\n  \"success\": false,\n  \"message\": \"Invalid or expired reset token\",\n  \"error\": \"INVALID_TOKEN\"\n}"
+				}
+			]
+		},
+		{
+			"name": "My Profile",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{accessToken}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:5002/api/user/me",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "5002",
+					"path": [
+						"api",
+						"user",
+						"me"
+					]
+				},
+				"description": "Retrieve the authenticated user's complete profile information.\n\n**Authentication:** Required (Bearer token)\n\n**Request Body:** None\n\n**Response (200 OK):**\n```json\n{\n  \"status\": \"success\",\n  \"user\": {\n    \"id\": \"number\",\n    \"name\": \"string\",\n    \"email\": \"string\",\n    \"role\": \"string\",\n    \"phone\": \"string\",\n    \"bio\": \"string\",\n    \"skills\": [\"string\"],\n    \"resume\": \"string (URL)\",\n    \"profilePicture\": \"string (URL)\",\n    \"createdAt\": \"timestamp\"\n  }\n}\n```\n\n**Notes:**\n- Returns all profile data for the authenticated user\n- Includes resume and profile picture URLs if uploaded\n- Skills array contains user's listed skills"
+			},
+			"response": [
+				{
+					"name": "Successful Profile Retrieval",
+					"originalRequest": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"url": {
+							"raw": "http://localhost:5002/api/user/me",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5002",
+							"path": [
+								"api",
+								"user",
+								"me"
+							]
+						}
+					},
+					"status": "OK",
+					"code": 200,
+					"_postman_previewlanguage": "json",
+					"header": [
+						{
+							"key": "Content-Type",
+							"value": "application/json",
+							"description": ""
+						},
+						{
+							"key": "Authorization",
+							"value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+							"description": ""
+						}
+					],
+					"cookie": [],
+					"body": "{\n  \"success\": true,\n  \"data\": {\n    \"user\": {\n      \"id\": 1,\n      \"fullName\": \"John Doe\",\n      \"email\": \"john.doe@example.com\",\n      \"phoneNumber\": \"+1234567890\",\n      \"role\": \"job_seeker\",\n      \"profile\": {\n        \"bio\": \"Experienced software developer with 5+ years in full-stack development\",\n        \"skills\": [\"JavaScript\", \"React\", \"Node.js\", \"Python\", \"MongoDB\"],\n        \"resume\": \"https://storage.example.com/resumes/john-doe-resume.pdf\",\n        \"resumeOriginalName\": \"John_Doe_Resume_2024.pdf\",\n        \"profilePicture\": \"https://storage.example.com/profiles/john-doe.jpg\",\n        \"experience\": \"5 years\",\n        \"education\": \"Bachelor's in Computer Science\"\n      },\n      \"createdAt\": \"2024-01-15T10:30:00.000Z\",\n      \"updatedAt\": \"2024-01-20T14:45:00.000Z\"\n    }\n  }\n}"
+				},
+				{
+					"name": "Error - Missing Authentication",
+					"originalRequest": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"url": {
+							"raw": "http://localhost:5002/api/user/me",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5002",
+							"path": [
+								"api",
+								"user",
+								"me"
+							]
+						}
+					},
+					"status": "Unauthorized",
+					"code": 401,
+					"_postman_previewlanguage": "json",
+					"header": [
+						{
+							"key": "Content-Type",
+							"value": "application/json",
+							"description": ""
+						}
+					],
+					"cookie": [],
+					"body": "{\n  \"success\": false,\n  \"message\": \"Authentication required. Please provide a valid access token\",\n  \"error\": \"UNAUTHORIZED\"\n}"
+				}
+			]
+		},
+		{
+			"name": "Update User Profile",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{accessToken}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "PUT",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"name\":\"Kamlesh Kumar\",\r\n    \"bio\":\"hi i have updated my Name\",\r\n    \"phoneNumber\":\"0987654327\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:5002/api/user/update/profile",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "5002",
+					"path": [
+						"api",
+						"user",
+						"update",
+						"profile"
+					]
+				},
+				"description": "Update the authenticated user's profile information including name, bio, phone, and skills.\n\n**Authentication:** Required (Bearer token)\n\n**Request Body:**\n```json\n{\n  \"name\": \"string\" (optional),\n  \"phone\": \"string\" (optional),\n  \"bio\": \"string\" (optional),\n  \"skills\": [\"string\"] (optional)\n}\n```\n\n**Response (200 OK):**\n```json\n{\n  \"status\": \"success\",\n  \"message\": \"Profile updated successfully\",\n  \"user\": {\n    \"id\": \"number\",\n    \"name\": \"string\",\n    \"email\": \"string\",\n    \"phone\": \"string\",\n    \"bio\": \"string\",\n    \"skills\": [\"string\"]\n  }\n}\n```\n\n**Notes:**\n- All fields are optional - only send fields you want to update\n- Skills should be sent as an array of strings\n- Email cannot be updated through this endpoint"
+			},
+			"response": [
+				{
+					"name": "Successful Profile Update",
+					"originalRequest": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\"fullName\":\"John Michael Doe\",\"phoneNumber\":\"+1234567899\",\"bio\":\"Senior Full-Stack Developer with expertise in MERN stack\",\"skills\":[\"JavaScript\",\"React\",\"Node.js\",\"Python\",\"MongoDB\",\"AWS\"],\"experience\":\"6 years\",\"education\":\"Master's in Computer Science\"}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:5002/api/user/update/profile",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5002",
+							"path": [
+								"api",
+								"user",
+								"update",
+								"profile"
+							]
+						}
+					},
+					"status": "OK",
+					"code": 200,
+					"_postman_previewlanguage": "json",
+					"header": [
+						{
+							"key": "Content-Type",
+							"value": "application/json",
+							"description": ""
+						},
+						{
+							"key": "Authorization",
+							"value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+							"description": ""
+						}
+					],
+					"cookie": [],
+					"body": "{\n  \"success\": true,\n  \"message\": \"Profile updated successfully\",\n  \"data\": {\n    \"user\": {\n      \"id\": 1,\n      \"fullName\": \"John Michael Doe\",\n      \"email\": \"john.doe@example.com\",\n      \"phoneNumber\": \"+1234567899\",\n      \"role\": \"job_seeker\",\n      \"profile\": {\n        \"bio\": \"Senior Full-Stack Developer with expertise in MERN stack\",\n        \"skills\": [\"JavaScript\", \"React\", \"Node.js\", \"Python\", \"MongoDB\", \"AWS\"],\n        \"experience\": \"6 years\",\n        \"education\": \"Master's in Computer Science\",\n        \"resume\": \"https://storage.example.com/resumes/john-doe-resume.pdf\",\n        \"profilePicture\": \"https://storage.example.com/profiles/john-doe.jpg\"\n      },\n      \"updatedAt\": \"2024-01-21T09:15:00.000Z\"\n    }\n  }\n}"
+				}
+			]
+		},
+		{
+			"name": "Get User By ID",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{accessToken}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:5002/api/user/9",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "5002",
+					"path": [
+						"api",
+						"user",
+						"9"
+					]
+				},
+				"description": "Retrieve public profile information for a specific user by their ID.\n\n**Authentication:** Required (Bearer token)\n\n**URL Parameter:**\n- `id` - User ID (number)\n\n**Request Body:** None\n\n**Response (200 OK):**\n```json\n{\n  \"status\": \"success\",\n  \"user\": {\n    \"id\": \"number\",\n    \"name\": \"string\",\n    \"email\": \"string\",\n    \"role\": \"string\",\n    \"bio\": \"string\",\n    \"skills\": [\"string\"],\n    \"profilePicture\": \"string (URL)\"\n  }\n}\n```\n\n**Notes:**\n- Returns public profile information only\n- Useful for viewing other users' profiles\n- Some sensitive information may be excluded"
+			},
+			"response": [
+				{
+					"name": "Successful User Retrieval",
+					"originalRequest": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"url": {
+							"raw": "http://localhost:5002/api/user/9",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5002",
+							"path": [
+								"api",
+								"user",
+								"9"
+							]
+						}
+					},
+					"status": "OK",
+					"code": 200,
+					"_postman_previewlanguage": "json",
+					"header": [
+						{
+							"key": "Content-Type",
+							"value": "application/json",
+							"description": ""
+						},
+						{
+							"key": "Authorization",
+							"value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+							"description": ""
+						}
+					],
+					"cookie": [],
+					"body": "{\n  \"success\": true,\n  \"data\": {\n    \"user\": {\n      \"id\": 9,\n      \"fullName\": \"Sarah Johnson\",\n      \"email\": \"sarah.johnson@example.com\",\n      \"phoneNumber\": \"+1555123456\",\n      \"role\": \"job_seeker\",\n      \"profile\": {\n        \"bio\": \"Frontend developer passionate about creating beautiful user experiences\",\n        \"skills\": [\"React\", \"Vue.js\", \"CSS\", \"TypeScript\", \"UI/UX Design\"],\n        \"profilePicture\": \"https://storage.example.com/profiles/sarah-johnson.jpg\",\n        \"experience\": \"3 years\",\n        \"education\": \"Bachelor's in Design\"\n      },\n      \"createdAt\": \"2024-01-10T08:20:00.000Z\"\n    }\n  }\n}"
+				}
+			]
+		},
+		{
+			"name": "Update Profile Picture",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{accessToken}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "PUT",
+				"header": [],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "file",
+							"type": "file",
+							"src": "/C:/Users/Pc/Downloads/logo (1).png"
+						}
+					]
+				},
+				"url": {
+					"raw": "http://localhost:5002/api/user/update/profile-picture",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "5002",
+					"path": [
+						"api",
+						"user",
+						"update",
+						"profile-picture"
+					]
+				},
+				"description": "Upload or update the authenticated user's profile picture.\n\n**Authentication:** Required (Bearer token)\n\n**Request Body:** (multipart/form-data)\n- `profilePicture` - Image file (JPEG, PNG, etc.)\n\n**Response (200 OK):**\n```json\n{\n  \"status\": \"success\",\n  \"message\": \"Profile picture updated successfully\",\n  \"profilePictureUrl\": \"string (URL)\"\n}\n```\n\n**Notes:**\n- Use multipart/form-data content type\n- Supported formats: JPEG, PNG, GIF\n- Image is uploaded to cloud storage (Cloudinary)\n- Returns the URL of the uploaded image\n- Previous profile picture may be replaced"
+			},
+			"response": [
+				{
+					"name": "Successful Profile Picture Update",
+					"originalRequest": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "multipart/form-data"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "profilePicture",
+									"value": "profile-photo.jpg"
+								}
+							]
+						},
+						"url": {
+							"raw": "http://localhost:5002/api/user/update/profile-picture",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5002",
+							"path": [
+								"api",
+								"user",
+								"update",
+								"profile-picture"
+							]
+						}
+					},
+					"status": "OK",
+					"code": 200,
+					"_postman_previewlanguage": "json",
+					"header": [
+						{
+							"key": "Content-Type",
+							"value": "multipart/form-data",
+							"description": ""
+						},
+						{
+							"key": "Authorization",
+							"value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+							"description": ""
+						}
+					],
+					"cookie": [],
+					"body": "{\n  \"success\": true,\n  \"message\": \"Profile picture updated successfully\",\n  \"data\": {\n    \"profilePicture\": \"https://storage.example.com/profiles/john-doe-1705834500.jpg\",\n    \"updatedAt\": \"2024-01-21T10:15:00.000Z\"\n  }\n}"
+				}
+			]
+		},
+		{
+			"name": "Update Resume",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{accessToken}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "PUT",
+				"header": [],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "file",
+							"type": "file",
+							"src": "/C:/Users/Pc/Downloads/Updated_Radhesh_Resume (1).pdf"
+						}
+					]
+				},
+				"url": {
+					"raw": "http://localhost:5002/api/user/update/resume",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "5002",
+					"path": [
+						"api",
+						"user",
+						"update",
+						"resume"
+					]
+				},
+				"description": "Upload or update the authenticated user's resume document.\n\n**Authentication:** Required (Bearer token)\n\n**Request Body:** (multipart/form-data)\n- `resume` - Resume file (PDF, DOC, DOCX)\n\n**Response (200 OK):**\n```json\n{\n  \"status\": \"success\",\n  \"message\": \"Resume updated successfully\",\n  \"resumeUrl\": \"string (URL)\"\n}\n```\n\n**Notes:**\n- Use multipart/form-data content type\n- Supported formats: PDF, DOC, DOCX\n- File is uploaded to cloud storage (Cloudinary)\n- Returns the URL of the uploaded resume\n- Previous resume may be replaced\n- Resume URL is used when applying for jobs"
+			},
+			"response": [
+				{
+					"name": "Successful Resume Update",
+					"originalRequest": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "multipart/form-data"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "resume",
+									"value": "John_Doe_Resume_2024.pdf"
+								}
+							]
+						},
+						"url": {
+							"raw": "http://localhost:5002/api/user/update/resume",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5002",
+							"path": [
+								"api",
+								"user",
+								"update",
+								"resume"
+							]
+						}
+					},
+					"status": "OK",
+					"code": 200,
+					"_postman_previewlanguage": "json",
+					"header": [
+						{
+							"key": "Content-Type",
+							"value": "multipart/form-data",
+							"description": ""
+						},
+						{
+							"key": "Authorization",
+							"value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+							"description": ""
+						}
+					],
+					"cookie": [],
+					"body": "{\n  \"success\": true,\n  \"message\": \"Resume updated successfully\",\n  \"data\": {\n    \"resume\": \"https://storage.example.com/resumes/john-doe-1705835700.pdf\",\n    \"resumeOriginalName\": \"John_Doe_Resume_2024.pdf\",\n    \"updatedAt\": \"2024-01-21T10:35:00.000Z\"\n  }\n}"
+				}
+			]
+		},
+		{
+			"name": "Add Skill",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"description": "Add a new skill to the authenticated user's profile.\n\n**Authentication:** Required (Bearer token)\n\n**Request Body:**\n```json\n{\n  \"skill\": \"string\"\n}\n```\n\n**Response (200 OK):**\n```json\n{\n  \"status\": \"success\",\n  \"message\": \"Skill added successfully\",\n  \"skills\": [\"string\"]\n}\n```\n\n**Notes:**\n- Adds a single skill to the user's skill list\n- Duplicate skills may be prevented\n- Returns updated list of all skills\n- Skills help match job seekers with relevant job postings"
+			},
+			"response": []
+		},
+		{
+			"name": "Create Company",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{accessToken}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "name",
+							"value": "Google",
+							"type": "text"
+						},
+						{
+							"key": "description",
+							"value": "Wlcom to Google",
+							"type": "text"
+						},
+						{
+							"key": "website",
+							"value": "http://www.google.co.in",
+							"type": "text"
+						},
+						{
+							"key": "file",
+							"type": "file",
+							"src": "/C:/Users/Pc/Downloads/Google__G__logo.svg.webp"
+						}
+					]
+				},
+				"url": {
+					"raw": "http://localhost:5003/api/job/company/new",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "5003",
+					"path": [
+						"api",
+						"job",
+						"company",
+						"new"
+					]
+				},
+				"description": "Create a new company profile. Only accessible to users with recruiter role.\n\n**Authentication:** Required (Bearer token)\n**Role Required:** Recruiter\n\n**Request Body:**\n```json\n{\n  \"name\": \"string\",\n  \"description\": \"string\",\n  \"website\": \"string\" (optional),\n  \"location\": \"string\",\n  \"logo\": \"string (URL)\" (optional)\n}\n```\n\n**Response (201 Created):**\n```json\n{\n  \"status\": \"success\",\n  \"message\": \"Company created successfully\",\n  \"company\": {\n    \"id\": \"number\",\n    \"name\": \"string\",\n    \"description\": \"string\",\n    \"website\": \"string\",\n    \"location\": \"string\",\n    \"logo\": \"string\",\n    \"userId\": \"number\",\n    \"createdAt\": \"timestamp\"\n  }\n}\n```\n\n**Notes:**\n- Only recruiters can create companies\n- Company is associated with the authenticated recruiter\n- Company name should be unique\n- Logo URL can be added after uploading to cloud storage"
+			},
+			"response": []
+		},
+		{
+			"name": "Delete Company",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{accessToken}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "DELETE",
+				"header": [],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "title",
+							"value": "Google",
+							"type": "text"
+						},
+						{
+							"key": "description",
+							"value": "Wlcom to Google",
+							"type": "text"
+						},
+						{
+							"key": "website",
+							"value": "http://www.google.co.in",
+							"type": "text"
+						},
+						{
+							"key": "file",
+							"type": "file",
+							"src": "/C:/Users/Pc/Downloads/Google__G__logo.svg.webp"
+						}
+					]
+				},
+				"url": {
+					"raw": "http://localhost:5003/api/job/company/1",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "5003",
+					"path": [
+						"api",
+						"job",
+						"company",
+						"1"
+					]
+				},
+				"description": "Delete a company profile. Only the company owner (recruiter who created it) can delete.\n\n**Authentication:** Required (Bearer token)\n**Role Required:** Recruiter\n\n**URL Parameter:**\n- `id` - Company ID (number)\n\n**Request Body:** None\n\n**Response (200 OK):**\n```json\n{\n  \"status\": \"success\",\n  \"message\": \"Company deleted successfully\"\n}\n```\n\n**Notes:**\n- Only the recruiter who created the company can delete it\n- Deleting a company may affect associated job postings\n- This action cannot be undone\n- Returns 403 if user is not the company owner"
+			},
+			"response": []
+		},
+		{
+			"name": "Create Job",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{accessToken}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"title\": \"Lead Backend Developer\",\r\n  \"description\": \"We are looking for a senior backend engineer...\",\r\n  \"salary\": 1500000,\r\n  \"location\": \"Remote\",\r\n  \"job_type\": \"Full-time\",\r\n  \"openings\": 3,\r\n  \"role\": \"Backend Developer\",\r\n  \"work_location\": \"Remote\",\r\n  \"company_id\": 2,\r\n  \"is_active\": true\r\n}\r\n",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:5003/api/job/new",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "5003",
+					"path": [
+						"api",
+						"job",
+						"new"
+					]
+				},
+				"description": "Create a new job posting. Only accessible to recruiters.\n\n**Authentication:** Required (Bearer token)\n**Role Required:** Recruiter\n\n**Request Body:**\n```json\n{\n  \"title\": \"string\",\n  \"description\": \"string\",\n  \"requirements\": [\"string\"],\n  \"salary\": \"number\",\n  \"location\": \"string\",\n  \"jobType\": \"string\",\n  \"experience\": \"number\",\n  \"position\": \"number\",\n  \"companyId\": \"number\"\n}\n```\n\n**Response (201 Created):**\n```json\n{\n  \"status\": \"success\",\n  \"message\": \"Job created successfully\",\n  \"job\": {\n    \"id\": \"number\",\n    \"title\": \"string\",\n    \"description\": \"string\",\n    \"requirements\": [\"string\"],\n    \"salary\": \"number\",\n    \"location\": \"string\",\n    \"jobType\": \"string\",\n    \"experience\": \"number\",\n    \"position\": \"number\",\n    \"companyId\": \"number\",\n    \"createdBy\": \"number\",\n    \"createdAt\": \"timestamp\"\n  }\n}\n```\n\n**Notes:**\n- Only recruiters can create job postings\n- Must specify a valid companyId owned by the recruiter\n- Requirements should be an array of strings\n- Job types: Full-time, Part-time, Contract, Internship, etc."
+			},
+			"response": []
+		},
+		{
+			"name": "Update Job",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{accessToken}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "PUT",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"title\": \"Lead Backend Developer\",\r\n  \"description\": \"We are looking for a senior backend engineer...\",\r\n  \"salary\": 1500000,\r\n  \"location\": \"Remote\",\r\n  \"job_type\": \"Full-time\",\r\n  \"openings\": 3,\r\n  \"role\": \"Backend Developer\",\r\n  \"work_location\": \"Remote\",\r\n  \"company_id\": 2,\r\n  \"is_active\": true\r\n}\r\n",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:5003/api/job/update/2",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "5003",
+					"path": [
+						"api",
+						"job",
+						"update",
+						"2"
+					]
+				},
+				"description": "Update an existing job posting. Only the recruiter who created the job can update it.\n\n**Authentication:** Required (Bearer token)\n**Role Required:** Recruiter\n\n**URL Parameter:**\n- `id` - Job ID (number)\n\n**Request Body:**\n```json\n{\n  \"title\": \"string\" (optional),\n  \"description\": \"string\" (optional),\n  \"requirements\": [\"string\"] (optional),\n  \"salary\": \"number\" (optional),\n  \"location\": \"string\" (optional),\n  \"jobType\": \"string\" (optional),\n  \"experience\": \"number\" (optional),\n  \"position\": \"number\" (optional)\n}\n```\n\n**Response (200 OK):**\n```json\n{\n  \"status\": \"success\",\n  \"message\": \"Job updated successfully\",\n  \"job\": {\n    \"id\": \"number\",\n    \"title\": \"string\",\n    \"description\": \"string\",\n    \"requirements\": [\"string\"],\n    \"salary\": \"number\",\n    \"location\": \"string\",\n    \"jobType\": \"string\",\n    \"experience\": \"number\",\n    \"position\": \"number\",\n    \"updatedAt\": \"timestamp\"\n  }\n}\n```\n\n**Notes:**\n- All fields are optional - only send fields to update\n- Only the job creator can update the posting\n- Returns 403 if user is not the job owner"
+			},
+			"response": []
+		},
+		{
+			"name": "Delete Job",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{accessToken}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "DELETE",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"title\": \"Frontend Developer\",\r\n  \"description\": \"We are looking for a skilled React.js developer with experience in modern UI frameworks.\",\r\n  \"salary\": 60000,\r\n  \"location\": \"Bangalore\",\r\n  \"job_type\": \"Full-time\",\r\n  \"openings\": 3,\r\n  \"role\": \"Frontend Developer\",\r\n  \"work_location\": \"Hybrid\",\r\n  \"company_id\": 2\r\n}\r\n"
+				},
+				"url": {
+					"raw": "http://localhost:5003/api/job/delete/1",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "5003",
+					"path": [
+						"api",
+						"job",
+						"delete",
+						"1"
+					]
+				},
+				"description": "Delete a job posting. Only the recruiter who created the job can delete it.\n\n**Authentication:** Required (Bearer token)\n**Role Required:** Recruiter\n\n**URL Parameter:**\n- `id` - Job ID (number)\n\n**Request Body:** None\n\n**Response (200 OK):**\n```json\n{\n  \"status\": \"success\",\n  \"message\": \"Job deleted successfully\"\n}\n```\n\n**Notes:**\n- Only the recruiter who created the job can delete it\n- Deleting a job may affect associated applications\n- This action cannot be undone\n- Returns 403 if user is not the job owner\n- Returns 404 if job not found"
+			},
+			"response": []
+		},
+		{
+			"name": "Get All Companies of Recruiter",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{accessToken}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"title\": \"Lead Backend Developer\",\r\n  \"description\": \"We are looking for a senior backend engineer...\",\r\n  \"salary\": 1500000,\r\n  \"location\": \"Remote\",\r\n  \"job_type\": \"Full-time\",\r\n  \"openings\": 3,\r\n  \"role\": \"Backend Developer\",\r\n  \"work_location\": \"Remote\",\r\n  \"company_id\": 2,\r\n  \"is_active\": true\r\n}\r\n"
+				},
+				"url": {
+					"raw": "http://localhost:5003/api/job/company/all",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "5003",
+					"path": [
+						"api",
+						"job",
+						"company",
+						"all"
+					]
+				},
+				"description": "Retrieve all companies created by the authenticated recruiter.\n\n**Authentication:** Required (Bearer token)\n**Role Required:** Recruiter\n\n**Request Body:** None\n\n**Response (200 OK):**\n```json\n{\n  \"status\": \"success\",\n  \"companies\": [\n    {\n      \"id\": \"number\",\n      \"name\": \"string\",\n      \"description\": \"string\",\n      \"website\": \"string\",\n      \"location\": \"string\",\n      \"logo\": \"string\",\n      \"createdAt\": \"timestamp\"\n    }\n  ]\n}\n```\n\n**Notes:**\n- Returns only companies created by the authenticated recruiter\n- Empty array if no companies exist\n- Useful for managing multiple company profiles"
+			},
+			"response": []
+		},
+		{
+			"name": "Get Company Detail By ID",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"// Visualization Script",
+							"// Visualization Script",
+							"var template = `",
+							"<canvas id=\"jobSalaryChart\" height=\"100\"></canvas>",
+							"<script src=\"https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.5.0/Chart.min.js\"></script> ",
+							"<script>",
+							"    var ctx = document.getElementById(\"jobSalaryChart\");",
+							"    var myChart = new Chart(ctx, {",
+							"        type: \"bar\",",
+							"        data: {",
+							"            labels: [],",
+							"            datasets: [{",
+							"                label: 'Salary (₹)',",
+							"                backgroundColor: ['#4285F4', '#34A853', '#FBBC05', '#EA4335'],",
+							"                borderColor: ['#4285F4', '#34A853', '#FBBC05', '#EA4335'],",
+							"                borderWidth: 1,",
+							"                data: []",
+							"            }]",
+							"        },",
+							"        options: {",
+							"            legend: { display: false },",
+							"            title: {",
+							"                display: true,",
+							"                text: 'Job Salaries at ' + 'Google'",
+							"            },",
+							"            scales: {",
+							"                xAxes: [{",
+							"                    display: true,",
+							"                    scaleLabel: {",
+							"                        display: true,",
+							"                        labelString: 'Job Title'",
+							"                    }",
+							"                }],",
+							"                yAxes: [{",
+							"                    display: true,",
+							"                    scaleLabel: {",
+							"                        display: true,",
+							"                        labelString: 'Salary (₹)'",
+							"                    },",
+							"                    ticks: {",
+							"                        beginAtZero: true,",
+							"                        callback: function(value) {",
+							"                            return '₹' + (value / 100000).toFixed(1) + 'L';",
+							"                        }",
+							"                    }",
+							"                }]",
+							"            },",
+							"            tooltips: {",
+							"                callbacks: {",
+							"                    label: function(tooltipItem) {",
+							"                        return '₹' + tooltipItem.yLabel.toLocaleString();",
+							"                    }",
+							"                }",
+							"            }",
+							"        }",
+							"    });",
+							"",
+							"    pm.getData(function (err, value) {",
+							"        myChart.data.labels = value.jobs.map(function(job) { return job.title; });",
+							"        myChart.data.datasets[0].data = value.jobs.map(function(job) { return job.salary; });",
+							"        myChart.options.title.text = 'Job Salaries at ' + value.companyName;",
+							"        myChart.update();",
+							"    });",
+							"</script>`;",
+							"",
+							"function createPayload() {",
+							"    var response = pm.response.json();",
+							"    var jobs = response.company && response.company.jobs ? response.company.jobs : [];",
+							"    var companyName = response.company && response.company.name ? response.company.name : 'Company';",
+							"    ",
+							"    return {",
+							"        jobs: jobs.map(function(job) {",
+							"            return {",
+							"                title: job.title || 'N/A',",
+							"                salary: job.salary || 0",
+							"            };",
+							"        }),",
+							"        companyName: companyName",
+							"    };",
+							"}",
+							"",
+							"pm.visualizer.set(template, createPayload());"
+						],
+						"type": "text/javascript",
+						"packages": {},
+						"requests": {}
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{accessToken}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:5003/api/job/company/2",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "5003",
+					"path": [
+						"api",
+						"job",
+						"company",
+						"2"
+					]
+				},
+				"description": "Retrieve detailed information about a specific company by its ID.\n\n**Authentication:** Required (Bearer token)\n\n**URL Parameter:**\n- `id` - Company ID (number)\n\n**Request Body:** None\n\n**Response (200 OK):**\n```json\n{\n  \"status\": \"success\",\n  \"company\": {\n    \"id\": \"number\",\n    \"name\": \"string\",\n    \"description\": \"string\",\n    \"website\": \"string\",\n    \"location\": \"string\",\n    \"logo\": \"string\",\n    \"userId\": \"number\",\n    \"createdAt\": \"timestamp\",\n    \"jobs\": [\n      {\n        \"id\": \"number\",\n        \"title\": \"string\",\n        \"location\": \"string\",\n        \"salary\": \"number\"\n      }\n    ]\n  }\n}\n```\n\n**Notes:**\n- Returns complete company information\n- May include associated job postings\n- Accessible to all authenticated users\n- Returns 404 if company not found"
+			},
+			"response": []
+		},
+		{
+			"name": "Get All Active Jobs",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{accessToken}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": ""
+				},
+				"url": {
+					"raw": "http://localhost:5003/api/job/active-jobs?title=backend&location=remote",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "5003",
+					"path": [
+						"api",
+						"job",
+						"active-jobs"
+					],
+					"query": [
+						{
+							"key": "title",
+							"value": "backend"
+						},
+						{
+							"key": "location",
+							"value": "remote"
+						}
+					]
+				},
+				"description": "Retrieve all active job postings with optional filtering by title and location.\n\n**Authentication:** Required (Bearer token)\n\n**Query Parameters:**\n- `title` - Filter by job title (optional, partial match)\n- `location` - Filter by job location (optional, partial match)\n\n**Request Body:** None\n\n**Response (200 OK):**\n```json\n{\n  \"status\": \"success\",\n  \"jobs\": [\n    {\n      \"id\": \"number\",\n      \"title\": \"string\",\n      \"description\": \"string\",\n      \"requirements\": [\"string\"],\n      \"salary\": \"number\",\n      \"location\": \"string\",\n      \"jobType\": \"string\",\n      \"experience\": \"number\",\n      \"position\": \"number\",\n      \"company\": {\n        \"id\": \"number\",\n        \"name\": \"string\",\n        \"logo\": \"string\"\n      },\n      \"createdAt\": \"timestamp\"\n    }\n  ]\n}\n```\n\n**Notes:**\n- Returns all active job postings\n- Supports search by title and location\n- Query parameters are case-insensitive\n- Includes basic company information with each job\n- Useful for job seekers browsing opportunities"
+			},
+			"response": []
+		},
+		{
+			"name": "Get Single Job",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"description": "Retrieve detailed information about a specific job posting by its ID.\n\n**Authentication:** Required (Bearer token)\n\n**URL Parameter:**\n- `id` - Job ID (number)\n\n**Request Body:** None\n\n**Response (200 OK):**\n```json\n{\n  \"status\": \"success\",\n  \"job\": {\n    \"id\": \"number\",\n    \"title\": \"string\",\n    \"description\": \"string\",\n    \"requirements\": [\"string\"],\n    \"salary\": \"number\",\n    \"location\": \"string\",\n    \"jobType\": \"string\",\n    \"experience\": \"number\",\n    \"position\": \"number\",\n    \"company\": {\n      \"id\": \"number\",\n      \"name\": \"string\",\n      \"description\": \"string\",\n      \"website\": \"string\",\n      \"location\": \"string\",\n      \"logo\": \"string\"\n    },\n    \"createdBy\": \"number\",\n    \"applications\": [\"number\"],\n    \"createdAt\": \"timestamp\"\n  }\n}\n```\n\n**Notes:**\n- Returns complete job details including company information\n- Includes array of application IDs\n- Useful for viewing full job description before applying\n- Returns 404 if job not found"
+			},
+			"response": []
+		},
+		{
+			"name": "Apply For Job",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{accessToken}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"job_id\":3\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:5002/api/user/apply/job",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "5002",
+					"path": [
+						"api",
+						"user",
+						"apply",
+						"job"
+					]
+				},
+				"description": "Submit a job application for a specific job posting. Only accessible to job seekers.\n\n**Authentication:** Required (Bearer token)\n**Role Required:** Job Seeker\n\n**Request Body:**\n```json\n{\n  \"jobId\": \"number\",\n  \"coverLetter\": \"string\" (optional),\n  \"resume\": \"string (URL)\" (optional)\n}\n```\n\n**Response (201 Created):**\n```json\n{\n  \"status\": \"success\",\n  \"message\": \"Application submitted successfully\",\n  \"application\": {\n    \"id\": \"number\",\n    \"jobId\": \"number\",\n    \"applicantId\": \"number\",\n    \"applicantEmail\": \"string\",\n    \"status\": \"Submitted\",\n    \"resume\": \"string (URL)\",\n    \"coverLetter\": \"string\",\n    \"appliedAt\": \"timestamp\"\n  }\n}\n```\n\n**Notes:**\n- Only job seekers can apply for jobs\n- Resume URL from user profile is used if not provided\n- Application status starts as \"Submitted\"\n- Cannot apply for the same job multiple times\n- Requires valid jobId\n- Returns 400 if already applied"
+			},
+			"response": []
+		},
+		{
+			"name": "Get All Applications by User",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{accessToken}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"job_id\":3\r\n}"
+				},
+				"url": {
+					"raw": "http://localhost:5002/api/user/application/all",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "5002",
+					"path": [
+						"api",
+						"user",
+						"application",
+						"all"
+					]
+				},
+				"description": "Retrieve all job applications submitted by the authenticated job seeker.\n\n**Authentication:** Required (Bearer token)\n**Role Required:** Job Seeker\n\n**Request Body:** None\n\n**Response (200 OK):**\n```json\n{\n  \"status\": \"success\",\n  \"applications\": [\n    {\n      \"id\": \"number\",\n      \"jobId\": \"number\",\n      \"applicantId\": \"number\",\n      \"status\": \"string\",\n      \"resume\": \"string (URL)\",\n      \"coverLetter\": \"string\",\n      \"appliedAt\": \"timestamp\",\n      \"job\": {\n        \"id\": \"number\",\n        \"title\": \"string\",\n        \"company\": {\n          \"name\": \"string\",\n          \"logo\": \"string\"\n        }\n      }\n    }\n  ]\n}\n```\n\n**Notes:**\n- Returns all applications by the authenticated user\n- Includes job and company details for each application\n- Application statuses: Submitted, Under Review, Shortlisted, Rejected, Accepted\n- Empty array if no applications exist\n- Useful for tracking application history"
+			},
+			"response": []
+		},
+		{
+			"name": "Get All Applications For Job",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{accessToken}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"job_id\":3\r\n}"
+				},
+				"url": {
+					"raw": "http://localhost:5003/api/job/application/3",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "5003",
+					"path": [
+						"api",
+						"job",
+						"application",
+						"3"
+					]
+				},
+				"description": "Retrieve all applications submitted for a specific job posting. Only accessible to the recruiter who created the job.\n\n**Authentication:** Required (Bearer token)\n**Role Required:** Recruiter\n\n**URL Parameter:**\n- `id` - Job ID (number)\n\n**Request Body:** None\n\n**Response (200 OK):**\n```json\n{\n  \"status\": \"success\",\n  \"applications\": [\n    {\n      \"application_id\": \"number\",\n      \"job_id\": \"number\",\n      \"applicant_id\": \"number\",\n      \"applicant_email\": \"string\",\n      \"status\": \"string\",\n      \"resume\": \"string (URL)\",\n      \"applied_at\": \"timestamp\",\n      \"subscribe\": \"boolean\",\n      \"applicant\": {\n        \"id\": \"number\",\n        \"name\": \"string\",\n        \"email\": \"string\",\n        \"phone\": \"string\",\n        \"bio\": \"string\",\n        \"skills\": [\"string\"],\n        \"profilePicture\": \"string (URL)\"\n      }\n    }\n  ]\n}\n```\n\n**Notes:**\n- Only the recruiter who created the job can view applications\n- Includes complete applicant profile information\n- Useful for reviewing and managing candidates\n- Returns 403 if user is not the job owner\n- Empty array if no applications exist"
+			},
+			"response": []
+		},
+		{
+			"name": "Update-Application",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{accessToken}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "PUT",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"status\":\"Hired\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:5003/api/job/application/update/1",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "5003",
+					"path": [
+						"api",
+						"job",
+						"application",
+						"update",
+						"1"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Career-Advice-API",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n   \"skills\":\"React JS,Express JS\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:5001/api/utils/career",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "5001",
+					"path": [
+						"api",
+						"utils",
+						"career"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Resume-Analyser",
+			"request": {
+				"method": "GET",
+				"header": []
+			},
+			"response": []
+		}
+	]
+}
