@@ -1,8 +1,8 @@
 'use client';
 import Link from 'next/link';
-import React, { useState } from 'react'
+import  { useState } from 'react'
 import { Button } from './ui/button';
-import { Briefcase, Home, HomeIcon, Info, LogIn, LogInIcon, LogOut, LogOutIcon, Menu, User, User2, User2Icon, UserCircle, UserCircle2, X } from 'lucide-react';
+import { Briefcase, Home, HomeIcon, Info, LogOut, LogOutIcon, Menu, User, User2Icon, UserCircle, UserCircle2, X } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { ModeToggle } from './mode-toggle';
@@ -48,7 +48,7 @@ const Navbar = () => {
                             <Button variant={"ghost"} className='flex items-center gap-2 font-medium'><Info size={16} />About</Button>
                         </Link>
                     </div>
-                    {/* Right Side Actions */}
+                    {/* Right Side Actions Desktop View */}
                     <div className="hidden md:flex items-center gap-3">
                         {
                             isAuth ? (
@@ -109,23 +109,23 @@ const Navbar = () => {
                     </Link>
                     {
                         isAuth ?
-                        <>
-                         <Link href={'/account'} onClick={toggleMenu}>
-                            <Button variant="ghost" className='w-full justify-start gap-3 h-11'><UserCircle2 size={18} />My Profile</Button>
-                         </Link>
-                        <Button variant="destructive" className='w-full justify-start gap-3 h-11' onClick={() => {
-                                logoutHandler();
-                                toggleMenu();
-                            }}><LogOutIcon size={18} />Logout</Button>
-                        
-                        </>
-                        
-                         : (
+                            <>
+                                <Link href={'/account'} onClick={toggleMenu}>
+                                    <Button variant="ghost" className='w-full justify-start gap-3 h-11'><UserCircle2 size={18} />My Profile</Button>
+                                </Link>
+                                <Button variant="destructive" className='w-full justify-start gap-3 h-11' onClick={() => {
+                                    logoutHandler();
+                                    toggleMenu();
+                                }}><LogOutIcon size={18} />Logout</Button>
+
+                            </>
+
+                            : (
                                 <Link href={"/login"} onClick={toggleMenu}>
 
                                     <Button variant="ghost" className='w-full justify-start gap-3 h-11'><UserCircle size={18} />Login</Button>
                                 </Link>
-                             )
+                            )
                     }
                 </div>
             </div>

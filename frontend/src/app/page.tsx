@@ -1,10 +1,11 @@
-import { Button } from '@/components/ui/button';
-import React from 'react'
+'use client';
+import Hero from '@/components/Hero';
+
 
 const Home = () => {
   return (
     <div>
-      <Button variant={"ghost"}>ShadCn Button</Button>
+      <Hero />
     </div>
   )
 }
