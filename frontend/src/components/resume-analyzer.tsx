@@ -28,32 +28,31 @@ import {
   Sparkles,
   Target,
   TrendingUp,
-  X,
+  X
 } from "lucide-react";
-import { ResumeAnalysisResponse, utils_service } from "@/types";
 
-// // Types based on your schema
-// interface ScoreBreakdown {
-//   formatting: { score: number; feedback: string };
-//   keywords: { score: number; feedback: string };
-//   structure: { score: number; feedback: string };
-//   readability: { score: number; feedback: string };
-// }
+// Types based on your schema
+interface ScoreBreakdown {
+  formatting: { score: number; feedback: string };
+  keywords: { score: number; feedback: string };
+  structure: { score: number; feedback: string };
+  readability: { score: number; feedback: string };
+}
 
-// interface Suggestion {
-//   category: string;
-//   issue: string;
-//   recommendation: string;
-//   priority: "high" | "medium" | "low";
-// }
+interface Suggestion {
+  category: string;
+  issue: string;
+  recommendation: string;
+  priority: "high" | "medium" | "low";
+}
 
-// interface ResumeAnalysisResponse {
-//   atsScore: number;
-//   scoreBreakdown: ScoreBreakdown;
-//   suggestions: Suggestion;
-//   strengths: string[];
-//   summary: string;
-// }
+interface ResumeAnalysisResponse {
+  atsScore: number;
+  scoreBreakdown: ScoreBreakdown;
+  suggestions: Suggestion;
+  strengths: string[];
+  summary: string;
+}
 
 const ResumeAnalyzer = () => {
   const [open, setOpen] = useState(false);
@@ -61,17 +60,15 @@ const ResumeAnalyzer = () => {
   const [loading, setLoading] = useState(false);
   const [response, setResponse] = useState<ResumeAnalysisResponse | null>(null);
   const [dragActive, setDragActive] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case "high":
-        return "bg-red-50 text-red-700 border-red-200 dark:bg-red-950/50 dark:text-red-400 dark:border-red-900";
-      case "medium":
-        return "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/50 dark:text-amber-400 dark:border-amber-900";
-      default:
-        return "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/50 dark:text-blue-400 dark:border-blue-900";
+      case "high": return "bg-red-50 text-red-700 border-red-200 dark:bg-red-950/50 dark:text-red-400 dark:border-red-900";
+      case "medium": return "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/50 dark:text-amber-400 dark:border-amber-900";
+      default: return "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/50 dark:text-blue-400 dark:border-blue-900";
     }
   };
 
@@ -95,9 +92,9 @@ const ResumeAnalyzer = () => {
     e.preventDefault();
     e.stopPropagation();
     setDragActive(false);
-
+    
     if (loading) return;
-
+    
     const droppedFile = e.dataTransfer.files?.[0];
     if (droppedFile && droppedFile.type === "application/pdf") {
       setFile(droppedFile);
@@ -113,6 +110,8 @@ const ResumeAnalyzer = () => {
   const analyzeResume = async () => {
     if (!file) return;
     setLoading(true);
+    setError(null);
+    
     try {
       const reader = new FileReader();
       reader.readAsDataURL(file);
@@ -120,28 +119,41 @@ const ResumeAnalyzer = () => {
         const base64 = (reader.result as string).split(",")[1];
         try {
           // Replace with your API endpoint
-          const apiEndpoint = `${
-            utils_service || ""
-          }/api/utils/resume-analyser`;
-
+          const apiEndpoint = `${process.env.NEXT_PUBLIC_UTILS_SERVICE || ''}/api/utils/resume-analyser`;
+          
           const res = await fetch(apiEndpoint, {
-            method: "POST",
+            method: 'POST',
             headers: {
-              "Content-Type": "application/json",
+              'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ pdfBase64: base64 }),
+            body: JSON.stringify({ pdfBase64: base64 })
           });
-
+          
+          if (!res.ok) {
+            throw new Error(`API Error: ${res.status} ${res.statusText}`);
+          }
+          
+          const contentType = res.headers.get('content-type');
+          if (!contentType || !contentType.includes('application/json')) {
+            throw new Error('API did not return JSON. Check your endpoint URL.');
+          }
+          
           const data: ResumeAnalysisResponse = await res.json();
           setResponse(data);
         } catch (error) {
-          console.error(error);
+          console.error('API Error:', error);
+          setError(error instanceof Error ? error.message : 'Failed to analyze resume. Please try again.');
         } finally {
           setLoading(false);
         }
       };
+      reader.onerror = () => {
+        setError('Failed to read file. Please try again.');
+        setLoading(false);
+      };
     } catch (error) {
-      console.error(error);
+      console.error('File reading error:', error);
+      setError('Failed to process file. Please try again.');
       setLoading(false);
     }
   };
@@ -149,6 +161,7 @@ const ResumeAnalyzer = () => {
   const resetDialog = () => {
     setFile(null);
     setResponse(null);
+    setError(null);
     setOpen(false);
   };
 
@@ -161,10 +174,7 @@ const ResumeAnalyzer = () => {
       <div className="text-center space-y-4 sm:space-y-6">
         {/* Premium Badge */}
         <div className="inline-flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full bg-gradient-to-r from-violet-500/10 via-purple-500/10 to-fuchsia-500/10 border border-violet-500/20 backdrop-blur-sm">
-          <Sparkles
-            size={14}
-            className="text-violet-600 dark:text-violet-400"
-          />
+          <Sparkles size={14} className="text-violet-600 dark:text-violet-400" />
           <span className="text-xs sm:text-sm font-semibold bg-gradient-to-r from-violet-600 to-fuchsia-600 dark:from-violet-400 dark:to-fuchsia-400 bg-clip-text text-transparent">
             AI-Powered ATS Scanner
           </span>
@@ -179,9 +189,7 @@ const ResumeAnalyzer = () => {
             </span>
           </h1>
           <p className="text-sm sm:text-base lg:text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed px-4">
-            Get instant AI-driven insights on your resume&#39;s ATS
-            compatibility, formatting, and content quality. Stand out to
-            recruiters and land more interviews.
+            Get instant AI-driven insights on your resume&#39;s ATS compatibility, formatting, and content quality. Stand out to recruiters and land more interviews.
           </p>
         </div>
 
@@ -189,24 +197,20 @@ const ResumeAnalyzer = () => {
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-8 pt-2 sm:pt-4">
           <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground">
             <Target size={14} className="text-green-600 shrink-0" />
-            <span>
-              <strong className="text-foreground">95%</strong> ATS Pass Rate
-            </span>
+            <span><strong className="text-foreground">95%</strong> ATS Pass Rate</span>
           </div>
           <div className="hidden sm:block h-4 w-px bg-border" />
           <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground">
             <TrendingUp size={14} className="text-blue-600 shrink-0" />
-            <span>
-              <strong className="text-foreground">2x</strong> Interview Rate
-            </span>
+            <span><strong className="text-foreground">2x</strong> Interview Rate</span>
           </div>
         </div>
 
         {/* CTA Button */}
         <Dialog open={open} onOpenChange={(v) => !loading && setOpen(v)}>
           <DialogTrigger asChild>
-            <Button
-              size="lg"
+            <Button 
+              size="lg" 
               className="mt-6 sm:mt-8 h-12 sm:h-14 px-6 sm:px-8 text-sm sm:text-base rounded-full bg-gradient-to-r from-blue-600 to-violet-600 hover:from-blue-700 hover:to-violet-700 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
             >
               <FileCheck className="mr-2" size={18} />
@@ -226,46 +230,31 @@ const ResumeAnalyzer = () => {
                     Resume Analysis
                   </DialogTitle>
                   <DialogDescription className="text-sm sm:text-base px-2">
-                    Upload your PDF resume to get detailed ATS compatibility
-                    insights
+                    Upload your PDF resume to get detailed ATS compatibility insights
                   </DialogDescription>
                 </DialogHeader>
 
                 {/* Upload Zone */}
-                <div
+                <div 
                   onClick={() => !loading && fileInputRef.current?.click()}
                   onDragEnter={handleDrag}
                   onDragLeave={handleDrag}
                   onDragOver={handleDrag}
                   onDrop={handleDrop}
                   className={`relative border-2 border-dashed rounded-2xl sm:rounded-3xl p-8 sm:p-12 lg:p-16 text-center transition-all duration-300 
-                    ${
-                      loading
-                        ? "cursor-not-allowed opacity-60"
-                        : "cursor-pointer hover:border-violet-500/50 hover:bg-violet-500/5"
-                    }
-                    ${
-                      dragActive
-                        ? "border-violet-500 bg-violet-500/10 scale-105"
-                        : "border-muted-foreground/20"
-                    }
-                    ${file ? "border-green-500/50 bg-green-500/5" : ""}`}
+                    ${loading ? 'cursor-not-allowed opacity-60' : 'cursor-pointer hover:border-violet-500/50 hover:bg-violet-500/5'}
+                    ${dragActive ? 'border-violet-500 bg-violet-500/10 scale-105' : 'border-muted-foreground/20'}
+                    ${file ? 'border-green-500/50 bg-green-500/5' : ''}`}
                 >
-                  <div
-                    className={`w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6 transition-all duration-300
-                    ${
-                      file
-                        ? "bg-green-500/20"
-                        : "bg-gradient-to-br from-blue-500/20 to-violet-500/20"
-                    }`}
-                  >
+                  <div className={`w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6 transition-all duration-300
+                    ${file ? 'bg-green-500/20' : 'bg-gradient-to-br from-blue-500/20 to-violet-500/20'}`}>
                     {file ? (
                       <CheckCircle2 className="text-green-600" size={32} />
                     ) : (
                       <Upload className="text-violet-600" size={32} />
                     )}
                   </div>
-
+                  
                   {file ? (
                     <div className="space-y-2 sm:space-y-3">
                       <div className="flex items-center justify-center gap-2 sm:gap-3 flex-wrap px-2">
@@ -298,29 +287,26 @@ const ResumeAnalyzer = () => {
                       </p>
                     </div>
                   )}
-
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    className="hidden"
-                    accept=".pdf"
-                    onChange={handleFileSelect}
-                    disabled={loading}
+                  
+                  <input 
+                    ref={fileInputRef} 
+                    type="file" 
+                    className="hidden" 
+                    accept=".pdf" 
+                    onChange={handleFileSelect} 
+                    disabled={loading} 
                   />
                 </div>
 
                 {/* Analyze Button */}
-                <Button
-                  onClick={analyzeResume}
-                  disabled={!file || loading}
+                <Button 
+                  onClick={analyzeResume} 
+                  disabled={!file || loading} 
                   className="w-full mt-6 sm:mt-8 h-14 sm:h-16 text-base sm:text-lg rounded-xl sm:rounded-2xl bg-gradient-to-r from-blue-600 to-violet-600 hover:from-blue-700 hover:to-violet-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg transition-all duration-300"
                 >
                   {loading ? (
                     <>
-                      <Loader2
-                        className="animate-spin mr-2 sm:mr-3"
-                        size={20}
-                      />
+                      <Loader2 className="animate-spin mr-2 sm:mr-3" size={20} />
                       <span>Analyzing Resume...</span>
                     </>
                   ) : (
@@ -335,10 +321,7 @@ const ResumeAnalyzer = () => {
                 <div className="mt-6 sm:mt-8 flex items-start gap-2 sm:gap-3 p-3 sm:p-4 rounded-xl bg-muted/50 border">
                   <Info size={16} className="text-blue-600 shrink-0 mt-0.5" />
                   <p className="text-xs text-muted-foreground leading-relaxed">
-                    Your resume is analyzed using advanced AI to check ATS
-                    compatibility, keyword optimization, formatting quality, and
-                    overall readability. Results are typically generated in
-                    10-15 seconds.
+                    Your resume is analyzed using advanced AI to check ATS compatibility, keyword optimization, formatting quality, and overall readability. Results are typically generated in 10-15 seconds.
                   </p>
                 </div>
               </div>
@@ -352,17 +335,11 @@ const ResumeAnalyzer = () => {
                         <FileCheck size={14} />
                         <span>Analysis Complete</span>
                       </div>
-                      <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold">
-                        Resume Report
-                      </h2>
+                      <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold">Resume Report</h2>
                     </div>
                     <div className="flex items-center gap-4 sm:gap-6">
                       <div className="text-center">
-                        <div
-                          className={`text-5xl sm:text-6xl lg:text-7xl font-black ${getScoreColor(
-                            response.atsScore
-                          )}`}
-                        >
+                        <div className={`text-5xl sm:text-6xl lg:text-7xl font-black ${getScoreColor(response.atsScore)}`}>
                           {response.atsScore}
                         </div>
                         <div className="text-[10px] sm:text-xs uppercase font-bold tracking-widest text-slate-400 mt-1">
@@ -381,14 +358,10 @@ const ResumeAnalyzer = () => {
                       <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-blue-500/10 flex items-center justify-center shrink-0">
                         <Info size={16} className="text-blue-600" />
                       </div>
-                      <h3 className="text-lg sm:text-xl font-bold">
-                        Executive Summary
-                      </h3>
+                      <h3 className="text-lg sm:text-xl font-bold">Executive Summary</h3>
                     </div>
                     <div className="relative p-4 sm:p-6 lg:p-8 rounded-xl sm:rounded-2xl bg-gradient-to-br from-blue-50 to-violet-50 dark:from-blue-950/30 dark:to-violet-950/30 border border-blue-200/50 dark:border-blue-800/50">
-                      <div className="absolute top-3 left-3 sm:top-4 sm:left-4 text-4xl sm:text-5xl lg:text-6xl text-blue-200 dark:text-blue-900/50 font-serif">
-                        &quot;
-                      </div>
+                      <div className="absolute top-3 left-3 sm:top-4 sm:left-4 text-4xl sm:text-5xl lg:text-6xl text-blue-200 dark:text-blue-900/50 font-serif">&quot;</div>
                       <p className="relative text-sm sm:text-base lg:text-lg leading-relaxed text-foreground/90 italic pl-6 sm:pl-8">
                         {response.summary}
                       </p>
@@ -401,64 +374,28 @@ const ResumeAnalyzer = () => {
                       <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-violet-500/10 flex items-center justify-center shrink-0">
                         <Target size={16} className="text-violet-600" />
                       </div>
-                      <h3 className="text-lg sm:text-xl font-bold">
-                        Performance Metrics
-                      </h3>
+                      <h3 className="text-lg sm:text-xl font-bold">Performance Metrics</h3>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                       {[
-                        {
-                          label: "Formatting",
-                          data: response.scoreBreakdown.formatting,
-                          icon: <Layout size={18} />,
-                          color: "blue",
-                        },
-                        {
-                          label: "Keywords",
-                          data: response.scoreBreakdown.keywords,
-                          icon: <Search size={18} />,
-                          color: "green",
-                        },
-                        {
-                          label: "Structure",
-                          data: response.scoreBreakdown.structure,
-                          icon: <Layers size={18} />,
-                          color: "violet",
-                        },
-                        {
-                          label: "Readability",
-                          data: response.scoreBreakdown.readability,
-                          icon: <BookOpen size={18} />,
-                          color: "amber",
-                        },
+                        { label: "Formatting", data: response.scoreBreakdown.formatting, icon: <Layout size={18}/>, color: "blue" },
+                        { label: "Keywords", data: response.scoreBreakdown.keywords, icon: <Search size={18}/>, color: "green" },
+                        { label: "Structure", data: response.scoreBreakdown.structure, icon: <Layers size={18}/>, color: "violet" },
+                        { label: "Readability", data: response.scoreBreakdown.readability, icon: <BookOpen size={18}/>, color: "amber" },
                       ].map((item, idx) => (
-                        <div
-                          key={idx}
-                          className="p-4 sm:p-6 rounded-xl sm:rounded-2xl bg-card border hover:shadow-lg transition-all duration-300 space-y-3 sm:space-y-4"
-                        >
+                        <div key={idx} className="p-4 sm:p-6 rounded-xl sm:rounded-2xl bg-card border hover:shadow-lg transition-all duration-300 space-y-3 sm:space-y-4">
                           <div className="flex justify-between items-center gap-3">
                             <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-                              <div
-                                className={`w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-${item.color}-500/10 flex items-center justify-center shrink-0`}
-                              >
+                              <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-${item.color}-500/10 flex items-center justify-center shrink-0`}>
                                 {item.icon}
                               </div>
-                              <span className="font-semibold text-base sm:text-lg truncate">
-                                {item.label}
-                              </span>
+                              <span className="font-semibold text-base sm:text-lg truncate">{item.label}</span>
                             </div>
-                            <span
-                              className={`text-xl sm:text-2xl font-bold ${getScoreColor(
-                                item.data.score
-                              )} shrink-0`}
-                            >
+                            <span className={`text-xl sm:text-2xl font-bold ${getScoreColor(item.data.score)} shrink-0`}>
                               {item.data.score}%
                             </span>
                           </div>
-                          <Progress
-                            value={item.data.score}
-                            className="h-2 sm:h-3 rounded-full"
-                          />
+                          <Progress value={item.data.score} className="h-2 sm:h-3 rounded-full" />
                           <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
                             {item.data.feedback}
                           </p>
@@ -481,14 +418,9 @@ const ResumeAnalyzer = () => {
                       </div>
                       <div className="space-y-2 sm:space-y-3">
                         {response.strengths.map((s, i) => (
-                          <div
-                            key={i}
-                            className="group flex items-start gap-2 sm:gap-3 p-3 sm:p-4 rounded-lg sm:rounded-xl bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-900/50 hover:shadow-md transition-all duration-300"
-                          >
+                          <div key={i} className="group flex items-start gap-2 sm:gap-3 p-3 sm:p-4 rounded-lg sm:rounded-xl bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-900/50 hover:shadow-md transition-all duration-300">
                             <div className="h-1.5 w-1.5 sm:h-2 sm:w-2 rounded-full bg-green-500 shrink-0 mt-1.5 sm:mt-2" />
-                            <span className="text-xs sm:text-sm leading-relaxed text-foreground/90">
-                              {s}
-                            </span>
+                            <span className="text-xs sm:text-sm leading-relaxed text-foreground/90">{s}</span>
                           </div>
                         ))}
                       </div>
@@ -504,43 +436,26 @@ const ResumeAnalyzer = () => {
                           Priority Action
                         </h3>
                       </div>
-
                       <div className="p-4 sm:p-6 rounded-xl sm:rounded-2xl border bg-card hover:shadow-lg transition-all duration-300 space-y-3 sm:space-y-4">
                         <div className="flex flex-col sm:flex-row justify-between items-start gap-2 sm:gap-3">
-                          <Badge
-                            variant="outline"
-                            className={`${getPriorityColor(
-                              response?.suggestions?.priority || "low"
-                            )} font-semibold text-xs shrink-0`}
-                          >
-                            {response?.suggestions?.priority?.toUpperCase() ||
-                              "N/A"}{" "}
-                            PRIORITY
+                          <Badge variant="outline" className={`${getPriorityColor(response.suggestions.priority)} font-semibold text-xs shrink-0`}>
+                            {response.suggestions.priority.toUpperCase()} PRIORITY
                           </Badge>
-
                           <span className="text-[10px] sm:text-xs font-bold uppercase text-muted-foreground tracking-wider">
-                            {response?.suggestions?.category}
+                            {response.suggestions.category}
                           </span>
                         </div>
-
                         <div className="space-y-2 sm:space-y-3">
                           <div className="flex items-start gap-2">
-                            <AlertTriangle
-                              size={14}
-                              className="text-amber-600 shrink-0 mt-0.5 sm:mt-1"
-                            />
+                            <AlertTriangle size={14} className="text-amber-600 shrink-0 mt-0.5 sm:mt-1" />
                             <p className="text-xs sm:text-sm font-semibold text-foreground">
-                              {response?.suggestions?.issue}
+                              {response.suggestions.issue}
                             </p>
                           </div>
-
                           <div className="flex items-start gap-2 pl-4 sm:pl-6">
-                            <ArrowRight
-                              size={14}
-                              className="text-green-600 shrink-0 mt-0.5 sm:mt-1"
-                            />
+                            <ArrowRight size={14} className="text-green-600 shrink-0 mt-0.5 sm:mt-1" />
                             <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
-                              {response?.suggestions?.recommendation}
+                              {response.suggestions.recommendation}
                             </p>
                           </div>
                         </div>
@@ -550,9 +465,9 @@ const ResumeAnalyzer = () => {
 
                   {/* Action Button */}
                   <div className="pt-4 sm:pt-6">
-                    <Button
-                      onClick={resetDialog}
-                      variant="outline"
+                    <Button 
+                      onClick={resetDialog} 
+                      variant="outline" 
                       className="w-full h-12 sm:h-14 rounded-xl sm:rounded-2xl text-sm sm:text-base font-semibold hover:bg-accent transition-all duration-300"
                     >
                       Analyze Another Resume

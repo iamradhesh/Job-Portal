@@ -28,27 +28,37 @@ export interface CareerGuideResponse{
     learningApproach:LearningApproach;
 }
 
-export interface ScoreBreakdown{
-    formatting:{score:number;feedback:string};
-    keywords:{score:number;feedback:string}
-    structure:{score:number;feedback:string}
-    readability:{score:number;feedback:string}
+export interface ScoreItem {
+  score: number;
+  feedback: string;
 }
 
-export interface Suggestion{
-    category:string;
-    issue:string;
-    recommendation:string;
-    priority:"high" | "medium" | "low";
-
-
+export interface Suggestion {
+  category: string;
+  issue: string;
+  recommendation: string;
+  priority: "high" | "medium" | "low";
 }
 
-export interface ResumeAnalysisResponse{
-    atsScore:number;
-    scoreBreakdown:ScoreBreakdown;
-    suggestions:Suggestion;
-    strengths:string[];
-    summary:string
+export interface AreaOfImprovement {
+  area: string;
+  description: string;
+  impact: string;
 }
+
+export interface ResumeAnalysisResponse {
+  atsScore: number;
+  scoreBreakdown: {
+    formatting: ScoreItem;
+    keywords: ScoreItem;
+    structure: ScoreItem;
+    readability: ScoreItem;
+  };
+  suggestions: Suggestion[];              // 🔥 FIXED
+  areasOfImprovement: AreaOfImprovement[]; // 🔥 NEW
+  overallPriority: "high" | "medium" | "low"; // 🔥 NEW
+  strengths: string[];
+  summary: string;
+}
+
 export const utils_service = "http://localhost:5001"
