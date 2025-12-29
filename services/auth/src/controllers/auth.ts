@@ -135,7 +135,7 @@ export const loginUser = TryCatch(async (req, res, next) => {
   res.status(200).json({
     status: "success",
     message: "User logged in successfully",
-    data: userObject,
+    userObject,
     token,
   });
 });
