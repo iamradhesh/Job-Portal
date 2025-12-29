@@ -1,5 +1,6 @@
 "use client";
 
+import Loading from "@/app/components/loading";
 import { Button } from "@/app/components/ui/button";
 import { Input } from "@/app/components/ui/input";
 import { Label } from "@/app/components/ui/label";
@@ -27,7 +28,10 @@ const LoginPage = () => {
     }
   }, [isAuth, router]);
 
-
+if(loading)
+  {
+    return <Loading />
+  }
   const submitHandler = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setBtnLoading(true);
