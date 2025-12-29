@@ -1,6 +1,6 @@
 "use client";
 
-import { CareerGuideResponse, utils_service } from "@/types";
+import { CareerGuideResponse,} from "@/types";
 import {
   ArrowRight,
   BookOpen,
@@ -28,6 +28,8 @@ import {
 import { Button } from "./ui/button";
 import { Label } from "./ui/label";
 import { Input } from "./ui/input";
+import { utils_service } from "@/context/AppContext";
+import toast from "react-hot-toast";
 
 const CareerGuide = () => {
   const [open, setOpen] = useState<boolean>(false);
@@ -56,7 +58,7 @@ const CareerGuide = () => {
 
   const getCarrerGuidence = async () => {
     if (skills.length === 0) {
-      alert("Please add at least one skill");
+      toast.error("Please add at least one skill");
     }
     setLoading(true);
     try {
@@ -65,12 +67,12 @@ const CareerGuide = () => {
       });
 
       setResponse(data);
-      alert("career Guidence Generated");
+      toast.success("career Guidence Generated");
     } catch (error: unknown) {
       if (axios.isAxiosError(error) && error.response?.data?.message) {
-        alert(error.response.data.message);
+        toast.error(error.response.data.message);
       } else {
-        alert("An unexpected error occurred");
+        toast.error("An unexpected error occurred");
       }
     } finally {
       setLoading(false);

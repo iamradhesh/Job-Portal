@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useRef } from "react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/app/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -9,9 +9,9 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog";
-import { Progress } from "@/components/ui/progress";
-import { Badge } from "@/components/ui/badge";
+} from "@/app/components/ui/dialog";
+import { Progress } from "@/app/components/ui/progress";
+import { Badge } from "@/app/components/ui/badge";
 import {
   Upload,
   CheckCircle2,
@@ -28,31 +28,48 @@ import {
   Sparkles,
   Target,
   TrendingUp,
-  X
+  X,
+  AlertCircle,
+  Lightbulb,
+  ChevronRight
 } from "lucide-react";
+import { ResumeAnalysisResponse } from "@/types";
+import { utils_service } from "@/context/AppContext";
+import toast from "react-hot-toast";
 
-// Types based on your schema
-interface ScoreBreakdown {
-  formatting: { score: number; feedback: string };
-  keywords: { score: number; feedback: string };
-  structure: { score: number; feedback: string };
-  readability: { score: number; feedback: string };
-}
+// Updated Types based on new schema
+// interface ScoreItem {
+//   score: number;
+//   feedback: string;
+// }
 
-interface Suggestion {
-  category: string;
-  issue: string;
-  recommendation: string;
-  priority: "high" | "medium" | "low";
-}
+// interface Suggestion {
+//   category: string;
+//   issue: string;
+//   recommendation: string;
+//   priority: "high" | "medium" | "low";
+// }
 
-interface ResumeAnalysisResponse {
-  atsScore: number;
-  scoreBreakdown: ScoreBreakdown;
-  suggestions: Suggestion;
-  strengths: string[];
-  summary: string;
-}
+// interface AreaOfImprovement {
+//   area: string;
+//   description: string;
+//   impact: string;
+// }
+
+// interface ResumeAnalysisResponse {
+//   atsScore: number;
+//   scoreBreakdown: {
+//     formatting: ScoreItem;
+//     keywords: ScoreItem;
+//     structure: ScoreItem;
+//     readability: ScoreItem;
+//   };
+//   suggestions: Suggestion[];
+//   areasOfImprovement: AreaOfImprovement[];
+//   overallPriority: "high" | "medium" | "low";
+//   strengths: string[];
+//   summary: string;
+// }
 
 const ResumeAnalyzer = () => {
   const [open, setOpen] = useState(false);
@@ -69,6 +86,14 @@ const ResumeAnalyzer = () => {
       case "high": return "bg-red-50 text-red-700 border-red-200 dark:bg-red-950/50 dark:text-red-400 dark:border-red-900";
       case "medium": return "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/50 dark:text-amber-400 dark:border-amber-900";
       default: return "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/50 dark:text-blue-400 dark:border-blue-900";
+    }
+  };
+
+  const getPriorityIcon = (priority: string) => {
+    switch (priority) {
+      case "high": return <AlertCircle size={16} className="text-red-600" />;
+      case "medium": return <AlertTriangle size={16} className="text-amber-600" />;
+      default: return <Info size={16} className="text-blue-600" />;
     }
   };
 
@@ -98,17 +123,31 @@ const ResumeAnalyzer = () => {
     const droppedFile = e.dataTransfer.files?.[0];
     if (droppedFile && droppedFile.type === "application/pdf") {
       setFile(droppedFile);
+      setError(null);
     }
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
-    if (!selectedFile || selectedFile.type !== "application/pdf") return;
+    if (!selectedFile || selectedFile.type !== "application/pdf") {
+      toast.error("Please upload a PDF File.!");
+      return;
+    };
+    if(selectedFile.size > 5*1024*1024)
+    {
+      toast.error("FIle size Should be less than 5MB");
+      return;
+    }
     setFile(selectedFile);
+    setError(null);
   };
 
   const analyzeResume = async () => {
-    if (!file) return;
+    if (!file) 
+      {
+        toast.error("Please upload a resume");
+        return;
+      };
     setLoading(true);
     setError(null);
     
@@ -118,8 +157,7 @@ const ResumeAnalyzer = () => {
       reader.onload = async () => {
         const base64 = (reader.result as string).split(",")[1];
         try {
-          // Replace with your API endpoint
-          const apiEndpoint = `${process.env.NEXT_PUBLIC_UTILS_SERVICE || ''}/api/utils/resume-analyser`;
+          const apiEndpoint = `${utils_service || ''}/api/utils/resume-analyser`;
           
           const res = await fetch(apiEndpoint, {
             method: 'POST',
@@ -131,6 +169,7 @@ const ResumeAnalyzer = () => {
           
           if (!res.ok) {
             throw new Error(`API Error: ${res.status} ${res.statusText}`);
+            toast.error(`API Error: ${res.status} ${res.statusText}`)
           }
           
           const contentType = res.headers.get('content-type');
@@ -140,9 +179,11 @@ const ResumeAnalyzer = () => {
           
           const data: ResumeAnalysisResponse = await res.json();
           setResponse(data);
+          toast.success("Resume Analyzed Successfully");
         } catch (error) {
           console.error('API Error:', error);
           setError(error instanceof Error ? error.message : 'Failed to analyze resume. Please try again.');
+          toast.error(error instanceof Error ? error.message : 'Failed to analyze resume. Please try again.')
         } finally {
           setLoading(false);
         }
@@ -167,12 +208,12 @@ const ResumeAnalyzer = () => {
 
   const removeFile = () => {
     setFile(null);
+    setError(null);
   };
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 lg:py-20">
       <div className="text-center space-y-4 sm:space-y-6">
-        {/* Premium Badge */}
         <div className="inline-flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full bg-gradient-to-r from-violet-500/10 via-purple-500/10 to-fuchsia-500/10 border border-violet-500/20 backdrop-blur-sm">
           <Sparkles size={14} className="text-violet-600 dark:text-violet-400" />
           <span className="text-xs sm:text-sm font-semibold bg-gradient-to-r from-violet-600 to-fuchsia-600 dark:from-violet-400 dark:to-fuchsia-400 bg-clip-text text-transparent">
@@ -180,7 +221,6 @@ const ResumeAnalyzer = () => {
           </span>
         </div>
 
-        {/* Main Heading */}
         <div className="space-y-3 sm:space-y-4">
           <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight px-2">
             Optimize Your Resume for
@@ -193,7 +233,6 @@ const ResumeAnalyzer = () => {
           </p>
         </div>
 
-        {/* Stats */}
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-8 pt-2 sm:pt-4">
           <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground">
             <Target size={14} className="text-green-600 shrink-0" />
@@ -206,7 +245,6 @@ const ResumeAnalyzer = () => {
           </div>
         </div>
 
-        {/* CTA Button */}
         <Dialog open={open} onOpenChange={(v) => !loading && setOpen(v)}>
           <DialogTrigger asChild>
             <Button 
@@ -234,7 +272,6 @@ const ResumeAnalyzer = () => {
                   </DialogDescription>
                 </DialogHeader>
 
-                {/* Upload Zone */}
                 <div 
                   onClick={() => !loading && fileInputRef.current?.click()}
                   onDragEnter={handleDrag}
@@ -298,7 +335,13 @@ const ResumeAnalyzer = () => {
                   />
                 </div>
 
-                {/* Analyze Button */}
+                {error && (
+                  <div className="mt-4 p-4 rounded-xl bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900/50 flex items-start gap-3">
+                    <AlertCircle size={18} className="text-red-600 shrink-0 mt-0.5" />
+                    <p className="text-sm text-red-700 dark:text-red-400">{error}</p>
+                  </div>
+                )}
+
                 <Button 
                   onClick={analyzeResume} 
                   disabled={!file || loading} 
@@ -317,7 +360,6 @@ const ResumeAnalyzer = () => {
                   )}
                 </Button>
 
-                {/* Info Footer */}
                 <div className="mt-6 sm:mt-8 flex items-start gap-2 sm:gap-3 p-3 sm:p-4 rounded-xl bg-muted/50 border">
                   <Info size={16} className="text-blue-600 shrink-0 mt-0.5" />
                   <p className="text-xs text-muted-foreground leading-relaxed">
@@ -327,7 +369,7 @@ const ResumeAnalyzer = () => {
               </div>
             ) : (
               <div className="flex flex-col h-full overflow-y-auto">
-                {/* Header with Score */}
+                {/* Header with Score and Priority */}
                 <div className="sticky top-0 z-10 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white p-5 sm:p-6 md:p-8 lg:p-10 border-b border-white/10">
                   <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 sm:gap-6">
                     <div className="space-y-1 sm:space-y-2">
@@ -336,6 +378,9 @@ const ResumeAnalyzer = () => {
                         <span>Analysis Complete</span>
                       </div>
                       <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold">Resume Report</h2>
+                      <Badge className={`${getPriorityColor(response.overallPriority)} mt-2`}>
+                        {response.overallPriority.toUpperCase()} PRIORITY
+                      </Badge>
                     </div>
                     <div className="flex items-center gap-4 sm:gap-6">
                       <div className="text-center">
@@ -404,64 +449,94 @@ const ResumeAnalyzer = () => {
                     </div>
                   </section>
 
-                  {/* Strengths & Improvements */}
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
-                    {/* Strengths */}
-                    <section className="space-y-3 sm:space-y-4">
-                      <div className="flex items-center gap-2 sm:gap-3">
-                        <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-green-500/10 flex items-center justify-center shrink-0">
-                          <CheckCircle2 size={16} className="text-green-600" />
-                        </div>
-                        <h3 className="text-lg sm:text-xl font-bold text-green-600 dark:text-green-400">
-                          Key Strengths
-                        </h3>
+                  {/* Actionable Suggestions */}
+                  <section className="space-y-4 sm:space-y-6">
+                    <div className="flex items-center gap-2 sm:gap-3">
+                      <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-amber-500/10 flex items-center justify-center shrink-0">
+                        <Lightbulb size={16} className="text-amber-600" />
                       </div>
-                      <div className="space-y-2 sm:space-y-3">
-                        {response.strengths.map((s, i) => (
-                          <div key={i} className="group flex items-start gap-2 sm:gap-3 p-3 sm:p-4 rounded-lg sm:rounded-xl bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-900/50 hover:shadow-md transition-all duration-300">
-                            <div className="h-1.5 w-1.5 sm:h-2 sm:w-2 rounded-full bg-green-500 shrink-0 mt-1.5 sm:mt-2" />
-                            <span className="text-xs sm:text-sm leading-relaxed text-foreground/90">{s}</span>
+                      <h3 className="text-lg sm:text-xl font-bold">Actionable Suggestions</h3>
+                    </div>
+                    <div className="space-y-3 sm:space-y-4">
+                      {response.suggestions.map((suggestion, idx) => (
+                        <div key={idx} className="p-4 sm:p-6 rounded-xl sm:rounded-2xl border bg-card hover:shadow-lg transition-all duration-300 space-y-3 sm:space-y-4">
+                          <div className="flex flex-col sm:flex-row justify-between items-start gap-2 sm:gap-3">
+                            <div className="flex items-center gap-2">
+                              {getPriorityIcon(suggestion.priority)}
+                              <Badge variant="outline" className={`${getPriorityColor(suggestion.priority)} font-semibold text-xs`}>
+                                {suggestion.priority.toUpperCase()}
+                              </Badge>
+                            </div>
+                            <span className="text-[10px] sm:text-xs font-bold uppercase text-muted-foreground tracking-wider">
+                              {suggestion.category}
+                            </span>
                           </div>
-                        ))}
-                      </div>
-                    </section>
+                          <div className="space-y-2 sm:space-y-3">
+                            <div className="flex items-start gap-2">
+                              <AlertTriangle size={14} className="text-amber-600 shrink-0 mt-0.5 sm:mt-1" />
+                              <p className="text-xs sm:text-sm font-semibold text-foreground">
+                                {suggestion.issue}
+                              </p>
+                            </div>
+                            <div className="flex items-start gap-2 pl-4 sm:pl-6">
+                              <ChevronRight size={14} className="text-green-600 shrink-0 mt-0.5 sm:mt-1" />
+                              <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
+                                {suggestion.recommendation}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </section>
 
-                    {/* Critical Improvement */}
-                    <section className="space-y-3 sm:space-y-4">
-                      <div className="flex items-center gap-2 sm:gap-3">
-                        <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-amber-500/10 flex items-center justify-center shrink-0">
-                          <AlertTriangle size={16} className="text-amber-600" />
-                        </div>
-                        <h3 className="text-lg sm:text-xl font-bold text-amber-600 dark:text-amber-400">
-                          Priority Action
-                        </h3>
+                  {/* Areas of Improvement */}
+                  <section className="space-y-4 sm:space-y-6">
+                    <div className="flex items-center gap-2 sm:gap-3">
+                      <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-orange-500/10 flex items-center justify-center shrink-0">
+                        <TrendingUp size={16} className="text-orange-600" />
                       </div>
-                      <div className="p-4 sm:p-6 rounded-xl sm:rounded-2xl border bg-card hover:shadow-lg transition-all duration-300 space-y-3 sm:space-y-4">
-                        <div className="flex flex-col sm:flex-row justify-between items-start gap-2 sm:gap-3">
-                          <Badge variant="outline" className={`${getPriorityColor(response.suggestions.priority)} font-semibold text-xs shrink-0`}>
-                            {response.suggestions.priority.toUpperCase()} PRIORITY
-                          </Badge>
-                          <span className="text-[10px] sm:text-xs font-bold uppercase text-muted-foreground tracking-wider">
-                            {response.suggestions.category}
-                          </span>
-                        </div>
-                        <div className="space-y-2 sm:space-y-3">
-                          <div className="flex items-start gap-2">
-                            <AlertTriangle size={14} className="text-amber-600 shrink-0 mt-0.5 sm:mt-1" />
-                            <p className="text-xs sm:text-sm font-semibold text-foreground">
-                              {response.suggestions.issue}
-                            </p>
-                          </div>
-                          <div className="flex items-start gap-2 pl-4 sm:pl-6">
-                            <ArrowRight size={14} className="text-green-600 shrink-0 mt-0.5 sm:mt-1" />
-                            <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
-                              {response.suggestions.recommendation}
+                      <h3 className="text-lg sm:text-xl font-bold">Areas of Improvement</h3>
+                    </div>
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+                      {response.areasOfImprovement.map((area, idx) => (
+                        <div key={idx} className="p-4 sm:p-6 rounded-xl sm:rounded-2xl bg-gradient-to-br from-orange-50 to-red-50 dark:from-orange-950/20 dark:to-red-950/20 border border-orange-200 dark:border-orange-900/50 hover:shadow-lg transition-all duration-300 space-y-3">
+                          <h4 className="font-bold text-base sm:text-lg text-orange-900 dark:text-orange-300">
+                            {area.area}
+                          </h4>
+                          <p className="text-xs sm:text-sm text-foreground/80 leading-relaxed">
+                            {area.description}
+                          </p>
+                          <div className="pt-2 border-t border-orange-200 dark:border-orange-900/50">
+                            <p className="text-xs font-semibold text-orange-700 dark:text-orange-400 flex items-start gap-2">
+                              <Info size={14} className="shrink-0 mt-0.5" />
+                              <span>Impact: {area.impact}</span>
                             </p>
                           </div>
                         </div>
+                      ))}
+                    </div>
+                  </section>
+
+                  {/* Strengths */}
+                  <section className="space-y-3 sm:space-y-4">
+                    <div className="flex items-center gap-2 sm:gap-3">
+                      <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-green-500/10 flex items-center justify-center shrink-0">
+                        <CheckCircle2 size={16} className="text-green-600" />
                       </div>
-                    </section>
-                  </div>
+                      <h3 className="text-lg sm:text-xl font-bold text-green-600 dark:text-green-400">
+                        Key Strengths
+                      </h3>
+                    </div>
+                    <div className="space-y-2 sm:space-y-3">
+                      {response.strengths.map((s, i) => (
+                        <div key={i} className="group flex items-start gap-2 sm:gap-3 p-3 sm:p-4 rounded-lg sm:rounded-xl bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-900/50 hover:shadow-md transition-all duration-300">
+                          <div className="h-1.5 w-1.5 sm:h-2 sm:w-2 rounded-full bg-green-500 shrink-0 mt-1.5 sm:mt-2" />
+                          <span className="text-xs sm:text-sm leading-relaxed text-foreground/90">{s}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </section>
 
                   {/* Action Button */}
                   <div className="pt-4 sm:pt-6">
