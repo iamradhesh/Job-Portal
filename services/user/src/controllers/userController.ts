@@ -17,21 +17,36 @@ export const myProfile = TryCatch(
 export const getUserProfileById = TryCatch(
   async (req: AuthenticatedRequest, res, next) => {
     const { userId } = req.params;
+
     const [user] = await sql`
-        SELECT u.user_id, u.name,u.email,u.phone_number,u.bio,u.role,u.resume,u.resume_public_id,u.profile_pic,
-        u.profile_pic_public_id,u.subscription,ARRAY_AGG(s.name) FILTER (WHERE s.name IS NOT NULL) as skills FROM users u LEFT JOIN user_skills us ON u.user_id = us.user_id
-        LEFT JOIN skills s ON us.skill_id = s.skill_id
-        WHERE u.user_id = ${userId}
-        GROUP BY u.user_id;
+      SELECT 
+        u.user_id,
+        u.name,
+        u.email,
+        u.phone_number,
+        u.bio,
+        u.role,
+        u.resume,
+        u.resume_public_id,
+        u.profile_pic,
+        u.profile_pic_public_id,
+        u.subscription,
+        ARRAY_AGG(s.name) FILTER (WHERE s.name IS NOT NULL) AS skills
+      FROM users u
+      LEFT JOIN user_skills us ON u.user_id = us.user_id
+      LEFT JOIN skills s ON us.skill_id = s.skill_id
+      WHERE u.user_id = ${userId}
+      GROUP BY u.user_id;
     `;
+
     if (!user) {
       throw new ErrorHandler(404, "User not found");
     }
-    res.status(200).json({
-      user,
-    });
+
+    res.status(200).json(user); // 🔥 normalized
   }
 );
+
 
 // Update User Profile
 export const updateUserProfile = TryCatch(
@@ -69,37 +84,72 @@ export const updateProfilePicture = TryCatch(
     const user = req.user;
     if (!user) throw new ErrorHandler(401, "Unauthorized");
 
-    const file = req.file;
+    const file = req.file; // This comes from multer
     if (!file) throw new ErrorHandler(400, "No file uploaded");
 
-    const oldPublicId = user.profile_pic_public_id;
+    try {
+      const oldPublicId = user.profile_pic_public_id;
 
-    // ✅ Create proper data URI like DataUriParser does
-    const base64Buffer = file.buffer.toString("base64");
-    const dataURI = `data:${file.mimetype};base64,${base64Buffer}`;
+      // Convert buffer to base64 data URI
+      const base64Buffer = file.buffer.toString("base64");
+      const dataURI = `data:${file.mimetype};base64,${base64Buffer}`;
 
-    const { data: uploadResult } = await axios.post(
-      `${process.env.UPLOAD_SERVICE}/api/utils/upload`,
-      {
-        buffer: dataURI, // ✅ Send complete data URI
-        mimetype: file.mimetype,
+      console.log("📤 Sending to utils service:", {
         originalname: file.originalname,
-        public_id: oldPublicId,
+        mimetype: file.mimetype,
+        sizeKB: Math.round(file.size / 1024) + " KB"
+      });
+
+      // Send as JSON to utils service
+      const uploadResponse = await axios.post(
+        `${process.env.UPLOAD_SERVICE}/api/utils/upload`,
+        {
+          buffer: dataURI,
+          mimetype: file.mimetype,
+          originalname: file.originalname,
+          public_id: oldPublicId,
+        },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          maxContentLength: Infinity,
+          maxBodyLength: Infinity,
+          timeout: 30000,
+        }
+      );
+
+      const uploadResult = uploadResponse.data;
+
+      console.log("✅ Upload successful:", uploadResult.public_id);
+
+      // Update database
+      const [updatedUser] = await sql`
+        UPDATE users
+        SET profile_pic = ${uploadResult.url},
+            profile_pic_public_id = ${uploadResult.public_id}
+        WHERE user_id = ${user.user_id}
+        RETURNING user_id, name, email, phone_number, bio, profile_pic, profile_pic_public_id, created_at
+      `;
+
+      res.status(200).json({
+        message: "Profile picture updated successfully",
+        updatedUser,
+      });
+    } catch (error) {
+      console.error("❌ Error updating profile picture:", error);
+      
+      if (axios.isAxiosError(error)) {
+        console.error("Response status:", error.response?.status);
+        console.error("Response data:", error.response?.data);
+        throw new ErrorHandler(
+          error.response?.status || 500,
+          error.response?.data?.message || "Failed to upload image to storage service"
+        );
       }
-    );
-
-    const [updatedUser] = await sql`
-      UPDATE users
-      SET profile_pic = ${uploadResult.url},
-          profile_pic_public_id = ${uploadResult.public_id}
-      WHERE user_id = ${user.user_id}
-      RETURNING user_id, name, email, phone_number, bio, profile_pic, profile_pic_public_id, created_at
-    `;
-
-    res.status(200).json({
-      message: "Profile picture updated successfully",
-      updatedUser,
-    });
+      
+      throw new ErrorHandler(500, "Internal server error while updating profile picture");
+    }
   }
 );
 

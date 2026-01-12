@@ -11,7 +11,7 @@ router.put('/update/profile',isAuth,updateUserProfile);
 router.put('/update/profile-picture',isAuth,uploadFile,updateProfilePicture);
 router.put('/update/resume',isAuth,uploadFile,updateResume);
 router.post('/skill/add',isAuth,addSkillToUser);
-router.delete('/skill/delete',isAuth,removeSkillFromUser);
+router.put('/skill/delete',isAuth,removeSkillFromUser);
 router.post('/apply/job',isAuth,applyForJob);
 router.get('/application/all',isAuth,getApplicantsForJob);
 export default router;

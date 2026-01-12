@@ -4,9 +4,8 @@ import router from "./routes.js";
 import cors from "cors";
 import { v2 as cloudinary } from "cloudinary";
 import { startSendMailConsumer } from "./consumer.js";
+
 dotenv.config();
-
-
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME as string,
@@ -15,13 +14,22 @@ cloudinary.config({
 });
 
 const app = express();
-app.use(express.json());
 
-app.use(cors());
+// CORS should be before other middleware
+app.use(cors({
+  origin: "http://localhost:3000",
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+}));
+
+// Body parsers with increased limits
 app.use(express.json({ limit: "50mb" }));
-startSendMailConsumer();
 app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 
+// Start consumer
+startSendMailConsumer();
+
+// Routes
 app.use("/api/utils", router);
 
 app.listen(process.env.PORT, () => {

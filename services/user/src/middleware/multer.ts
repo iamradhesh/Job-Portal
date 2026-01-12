@@ -9,7 +9,9 @@ const allowedTypes = [
   "application/pdf",
   "image/jpeg",
   "image/jpg",
-  "image/png"
+  "image/png",
+  "image/gif",
+  "image/webp"
 ];
 
 const upload = multer({
@@ -22,23 +24,22 @@ const upload = multer({
     }
   },
   limits: {
-    fileSize: 5 * 1024 * 1024 // 5 MB
+    fileSize: 10 * 1024 * 1024 // Increase to 10 MB
   }
 }).single("file");
 
-// ✨ Clean wrapper — no spam logging, no base64 output
 const uploadFile = (req: Request, res: Response, next: NextFunction) => {
   upload(req, res, (err: any) => {
     if (err) {
+      console.error("Multer error:", err.message);
       return res.status(400).json({
         message: "File upload error",
         error: err.message
       });
     }
 
-    // Safe metadata logging ONLY (no buffers)
     if (req.file) {
-      console.log("Uploaded file:", {
+      console.log("✅ File received:", {
         name: req.file.originalname,
         type: req.file.mimetype,
         sizeKB: Math.round(req.file.size / 1024) + " KB"

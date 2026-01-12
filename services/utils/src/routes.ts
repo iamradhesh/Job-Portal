@@ -9,12 +9,13 @@ dotenv.config();
 const router = express.Router();
 
 interface UploadRequestBody {
-  buffer: string; // This is actually the FULL data URI from DataUriParser
+  buffer: string; // Full data URI: data:image/jpeg;base64,xxxxx
   originalname: string;
   mimetype: string;
   public_id?: string;
 }
-//Upload Route:-
+
+// Upload Route
 router.post("/upload", async (req: Request, res: Response) => {
   try {
     const { buffer, originalname, mimetype, public_id } =
@@ -30,9 +31,8 @@ router.post("/upload", async (req: Request, res: Response) => {
       });
     }
 
-    // ✅ FIX: DataUriParser already returns the full data URI
-    // Don't add the prefix again!
-    const uploadDataURI = buffer; // Already in format: data:mimetype;base64,xxxxx
+    // Buffer is already the complete data URI from user service
+    const uploadDataURI = buffer;
 
     const ext = originalname.split(".").pop()?.toLowerCase() || "";
     const imageExtensions = ["jpg", "jpeg", "png", "gif", "webp"];
@@ -57,7 +57,7 @@ router.post("/upload", async (req: Request, res: Response) => {
         });
         console.log("🗑️ Deleted old file:", public_id);
       } catch (err: any) {
-        console.log("⚠ Could not delete old file:", err.message);
+        console.log("⚠️ Could not delete old file:", err.message);
       }
     }
 
@@ -68,8 +68,15 @@ router.post("/upload", async (req: Request, res: Response) => {
       public_id: cleanPublicId.replace("job-portal/", ""),
     };
 
-    // ✅ For raw files (PDFs, docs), preserve the extension
-    if (resourceType === "raw") {
+    // Add transformations for images to optimize size
+    if (resourceType === "image") {
+      uploadOptions.transformation = [
+        { width: 1000, height: 1000, crop: "limit" },
+        { quality: "auto:good" },
+        { fetch_format: "auto" }
+      ];
+    } else {
+      // For raw files (PDFs, docs), preserve the extension
       uploadOptions.public_id = `${uploadOptions.public_id}.${ext}`;
     }
 
@@ -100,9 +107,10 @@ router.post("/upload", async (req: Request, res: Response) => {
   }
 });
 
-//GenAI ROute:-
-router.post("/career",generateCareerAdvice);
+// GenAI Route
+router.post("/career", generateCareerAdvice);
 
-//Resume ANalysis Route:-
-router.post("/resume-analyser",analyseResume);
+// Resume Analysis Route
+router.post("/resume-analyser", analyseResume);
+
 export default router;
