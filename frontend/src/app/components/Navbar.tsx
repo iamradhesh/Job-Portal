@@ -99,7 +99,7 @@ const Navbar = () => {
                       >
                         <Avatar className="h-9 w-9 ring-2 ring-offset-2 ring-offset-background ring-blue-500/20 cursor-pointer hover:ring-blue-500/40 transition-all">
                           <AvatarImage
-                            src={user ? (user.profle_pic as string) : ""}
+                            src={user ? (user.profile_pic as string) : ""}
                             alt={user ? (user.name as string) : ""}
                           />
                           <AvatarFallback className="bg-blue-100 dark:bg-blue-900 text-blue-600">

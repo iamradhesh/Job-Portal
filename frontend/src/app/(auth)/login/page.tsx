@@ -43,7 +43,7 @@ if(loading)
       });
       toast.success(data.message);
       Cookies.set("token", data.token, {
-        expires: 15,
+        expires: 7,
         secure: process.env.NODE_ENV==="production",
         path: "/",
       });

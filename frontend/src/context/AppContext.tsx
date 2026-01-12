@@ -5,6 +5,7 @@ import { createContext, useContext, useEffect, useState } from "react";
 import toast, { Toaster } from 'react-hot-toast';
 import Cookies from "js-cookie";
 import axios from "axios";
+
 export const auth_service = `http://localhost:5000`;
 export const utils_service = "http://localhost:5001";
 export const user_service = `http://localhost:5002`;
@@ -43,6 +44,74 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
         }
     };
 
+    async function updateProfilePic(formData: FormData)
+    {
+        setLoading(true);
+        try {
+            const {data} = await axios.put(`${user_service}/api/user/update/profile-picture`,formData,{
+                
+                headers:{
+                    Authorization: `Bearer ${token}`
+                }
+            });
+
+            toast.success(data.message);
+            fetchUser();
+        } catch (error: unknown) {
+            if (axios.isAxiosError(error) && error.response) {
+                toast.error(error.response.data.message);
+            } else {
+                toast.error("An unexpected error occurred.");
+            }
+        }finally{
+            setLoading(false);
+        }
+    }
+
+     async function updateResume(formData: FormData)
+    {
+        setLoading(true);
+        try {
+            const {data} = await axios.put(`${user_service}/api/user/update/resume`,formData,{
+                
+                headers:{
+                    Authorization: `Bearer ${token}`
+                }
+            });
+
+            toast.success(data.message);
+            fetchUser();
+        } catch (error: unknown) {
+            if (axios.isAxiosError(error) && error.response) {
+                toast.error(error.response.data.message);
+            } else {
+                toast.error("An unexpected error occurred.");
+            }
+        }finally{
+            setLoading(false);
+        }
+    }
+
+    async function updateUser(name:string,phoneNumber:string,bio:string) {
+        setBtnLoading(true);
+        try {
+            const {data} = await axios.put(`${user_service}/api/user/update/profile`,{name,phoneNumber,bio},{
+                    headers:{
+                        Authorization: `Bearer ${token}`,
+                    }
+            });
+            toast.success(data.message);
+            fetchUser();
+        } catch (error: unknown) {
+            if (axios.isAxiosError(error) && error.response) {
+                toast.error(error.response.data.message);
+            } else {
+                toast.error("An unexpected error occurred.");
+            }
+        }finally{
+            setBtnLoading(false);
+        }
+    }
     async function logoutUser() {
         Cookies.set("token", "");
         setUser(null);
@@ -50,6 +119,50 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
         toast.success("User LoggedOut Successfully.!")
     }
 
+    async function addSkill(skillname:string,setSkill:React.Dispatch<React.SetStateAction<string | "">>) {
+        setBtnLoading(true);
+        try {
+            const {data} = await axios.post(`${user_service}/api/user/skill/add`,{skillname},{
+                headers:{
+                    Authorization: `Bearer ${token}`
+                }
+            })
+            toast.success(data.message);
+            setSkill("");
+            fetchUser();
+        } catch (error: unknown) {
+            if (axios.isAxiosError(error) && error.response) {
+                toast.error(error.response.data.message);
+            } else {
+                toast.error("An unexpected error occurred.");
+            }
+        }finally{
+            setBtnLoading(false);
+        }
+    }
+
+    
+async function removeSkill(skillname:string) {
+        setBtnLoading(true);
+        try {
+            const {data} = await axios.put(`${user_service}/api/user/skill/delete`,{skillname},{
+                headers:{
+                    Authorization: `Bearer ${token}`
+                }
+            })
+            toast.success(data.message);
+         
+            fetchUser();
+        } catch (error: unknown) {
+            if (axios.isAxiosError(error) && error.response) {
+                toast.error(error.response.data.message);
+            } else {
+                toast.error("An unexpected error occurred.");
+            }
+        }finally{
+            setBtnLoading(false);
+        }
+    }
     useEffect(() => {
         fetchUser()
     }, []);
@@ -65,7 +178,12 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
                 setIsAuth,
                 setLoading,
                 setBtnLoading,
-                logoutUser
+                logoutUser,
+                updateProfilePic,
+                updateResume,
+                updateUser,
+                addSkill,
+                removeSkill
                 
             }}
         >

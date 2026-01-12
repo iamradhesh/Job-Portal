@@ -71,7 +71,7 @@ export interface User {
   bio: string | null;
   resume: string | null;
   resume_public_id: string | null;
-  profle_pic: string | null;
+  profile_pic: string | null;
   profile_pic_public_id: string | null;
   skills: string[];
   subscription: string | null;
@@ -87,8 +87,66 @@ export interface AppContextTypes {
   setIsAuth: React.Dispatch<React.SetStateAction<boolean>>;
   setBtnLoading: React.Dispatch<React.SetStateAction<boolean>>;
   logoutUser: ()=> Promise<void>
+  updateProfilePic: (formData: FormData)=> Promise<void>
+  updateResume: (formData: FormData)=> Promise<void>
+  updateUser: (name:string,phoneNumber:string,bio:string)=> Promise<void>
+  addSkill: (skillname:string,setSkill:React.Dispatch<React.SetStateAction<string | "">>)=> Promise<void>
+  removeSkill: (skillname:string)=> Promise<void>
 }
 
 export interface AppProviderProps {
   children: ReactNode;
+}
+
+export interface AccountProps{
+  user:User;
+  isYourAccount: boolean;
+  
+}
+
+export interface Job{
+  job_id: number;
+  title: string;
+  description: string;
+  salary: number | null;
+  location: string | null;
+  job_type: "Full-time" | "Part-time" | "Contract" | "Internship" | "Temporary";
+  openings: number;
+  role: string;
+  work_location: "Remote" | "On-site" | "Hybrid";
+  company_id: number;
+  posted_by_recruiter_id: number;
+  created_at: string;
+  updated_at: string;
+  is_Active: boolean;
+}
+export interface Company{
+  company_id: string;
+  name: string;
+  description: string;
+  website: string;
+  logo: string;
+  logo_public_id: string;
+  recruiter_id: number;
+  created_at: string;
+  job?: Job[];
+}
+
+type ApplicationStatus = "Submitted" | "Rejected" | "Hired";
+
+export interface Application{
+  application_id: number;
+  job_id: number;
+  applicant_id: number;
+  applicant_email: string;
+  resume: string;
+  resume_public_id: string;
+  status: ApplicationStatus;
+  applied_at: string;
+  updated_at: string;
+  subscribed: boolean;
+  job_title: string;
+  job_salary: number | null;
+  job_location: string | null;
+  
 }
