@@ -346,7 +346,7 @@ export const getCompanyDetails = TryCatch(
 
 //Get ALL Active Jobs Controller:-
 
-export const getAllActiveJobs = TryCatch(
+export const getAllJobs = TryCatch(
   async (req: AuthenticatedRequest, res) => {
     const { title, location } = req.query as {
       title?: string;
@@ -354,23 +354,26 @@ export const getAllActiveJobs = TryCatch(
     };
 
     let queryString = `
-    SELECT 
-      j.job_id,
-      j.title,
-      j.description,
-      j.salary,
-      j.location,
-      j.job_type,
-      j.openings,
-      j.role,
-      j.work_location,
-      c.name AS company_name,
-      c.logo AS company_logo,
-      c.company_id
-    FROM jobs j
-    JOIN companies c ON j.company_id = c.company_id
-    WHERE j.is_active = true
-  `;
+      SELECT 
+        j.job_id,
+        j.title,
+        j.description,
+        j.salary,
+        j.location,
+        j.job_type,
+        j.openings,
+        j.role,
+        j.work_location,
+        j.is_active,
+        
+        j.created_at,
+        c.name AS company_name,
+        c.logo AS company_logo,
+        c.company_id
+      FROM jobs j
+      JOIN companies c ON j.company_id = c.company_id
+      WHERE 1 = 1
+    `;
 
     const values: any[] = [];
     let paramIndex = 1;
@@ -386,16 +389,18 @@ export const getAllActiveJobs = TryCatch(
       values.push(`%${location}%`);
       paramIndex++;
     }
+
     queryString += ` ORDER BY j.created_at DESC`;
 
-    const activeJobs = (await sql.query(queryString, values)) as any[];
+    const jobs = (await sql.query(queryString, values)) as any[];
 
     res.status(200).json({
-      status: "Active Jobs Fetched Successfully.!",
-      activeJobs,
+      status: "Jobs fetched successfully!",
+      jobs,
     });
   }
 );
+
 
 //Get Single Job Details By ID Controller:-
 
