@@ -92,6 +92,9 @@ export interface AppContextTypes {
   updateUser: (name:string,phoneNumber:string,bio:string)=> Promise<void>
   addSkill: (skillname:string,setSkill:React.Dispatch<React.SetStateAction<string | "">>)=> Promise<void>
   removeSkill: (skillname:string)=> Promise<void>
+  applyJob : (job_id:number) =>Promise<void>
+  applications: Application[] | null;
+  fetchApplications: ()=>Promise<void>
 }
 
 export interface AppProviderProps {
@@ -115,10 +118,12 @@ export interface Job{
   role: string;
   work_location: "Remote" | "On-site" | "Hybrid";
   company_id: number;
+  company_name:string;
+  company_logo: string;
   posted_by_recruiter_id: number;
   created_at: string;
   updated_at: string;
-  is_Active: boolean;
+  is_active: boolean;
 }
 export interface Company{
   company_id: string;
@@ -129,7 +134,7 @@ export interface Company{
   logo_public_id: string;
   recruiter_id: number;
   created_at: string;
-  job?: Job[];
+  jobs?: Job[];
 }
 
 type ApplicationStatus = "Submitted" | "Rejected" | "Hired";

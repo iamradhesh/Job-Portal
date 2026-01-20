@@ -46,6 +46,8 @@ const Company = () => {
   const [logo, setLogo] = useState<File | null>(null);
   const [btnLoading, setBtnLoading] = useState<boolean>(false);
   const [companies, setCompanies] = useState<CompanyType[]>([]);
+  const [companyLoading, setCompanyLoading] = useState<boolean>(true);
+  const {user} = useAppData();
   const clearData = () => {
     setName("");
     setDescription("");
@@ -59,6 +61,7 @@ const Company = () => {
       // console.log("fetchCompanies called");
       // console.log("job_service:", job_service);
       // console.log("token:", token);
+      setCompanyLoading(true);
 
       const { data } = await axios.get(`${job_service}/api/job/company/all`, {
         headers: {
@@ -70,6 +73,8 @@ const Company = () => {
       setCompanies(data.companies);
     } catch (error) {
       console.log("API error:", error);
+    }finally{
+      setCompanyLoading(false);
     }
   }
 
@@ -142,7 +147,9 @@ const Company = () => {
   }
   return (
     <div className="max-w-7xl mx-auto px-4 py-6">
-      <Card className="shadow-lg border-2 overflow-hidden">
+      {
+        user && user.role === "recruiter" && 
+        <Card className="shadow-lg border-2 overflow-hidden">
         <div className="bg-blue-500 p-6 border-b">
           <div className="flex items-center justify-between flex-wrap gap-4">
             <div className="flex items-center gap-3">
@@ -168,7 +175,8 @@ const Company = () => {
           </div>
         </div>
 
-        <div className="p-6">
+       {
+        companyLoading ? <Loading />: <div className="p-6">
           {companies.length > 0 ? (
             <div className="grid gap-4">
               {companies.map((c) => (
@@ -245,7 +253,9 @@ const Company = () => {
             </>
           )}
         </div>
+       }
       </Card>
+      }
       {/* Add Company Dialog */}
       <Dialog>
         <DialogTrigger asChild>

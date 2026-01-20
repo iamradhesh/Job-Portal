@@ -1,10 +1,11 @@
 "use client";
 
-import { AppContextTypes, AppProviderProps, User } from "@/types";
+import { AppContextTypes, Application, AppProviderProps, User } from "@/types";
 import { createContext, useContext, useEffect, useState } from "react";
 import toast, { Toaster } from 'react-hot-toast';
 import Cookies from "js-cookie";
-import axios from "axios";
+import axios, { AxiosError } from "axios";
+import { redirect } from "next/navigation";
 
 export const auth_service = `http://localhost:5000`;
 export const utils_service = "http://localhost:5001";
@@ -24,33 +25,32 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
 
     const token = Cookies.get("token");
 
-    async function fetchUser(){
+    async function fetchUser() {
         try {
-            const {data} = await axios.get(`${user_service}/api/user/me`,{
-                headers:{
+            const { data } = await axios.get(`${user_service}/api/user/me`, {
+                headers: {
                     Authorization: `Bearer ${token}`
                 },
             });
 
             setUser(data);
-           // setIsAuth(true);
+            // setIsAuth(true);
 
 
         } catch (error) {
-            console.log("Error While Fetching Currunt User:",error);
+            console.log("Error While Fetching Currunt User:", error);
             setIsAuth(false)
-        }finally{
+        } finally {
             setLoading(false);
         }
     };
 
-    async function updateProfilePic(formData: FormData)
-    {
+    async function updateProfilePic(formData: FormData) {
         setLoading(true);
         try {
-            const {data} = await axios.put(`${user_service}/api/user/update/profile-picture`,formData,{
-                
-                headers:{
+            const { data } = await axios.put(`${user_service}/api/user/update/profile-picture`, formData, {
+
+                headers: {
                     Authorization: `Bearer ${token}`
                 }
             });
@@ -63,18 +63,17 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
             } else {
                 toast.error("An unexpected error occurred.");
             }
-        }finally{
+        } finally {
             setLoading(false);
         }
     }
 
-     async function updateResume(formData: FormData)
-    {
+    async function updateResume(formData: FormData) {
         setLoading(true);
         try {
-            const {data} = await axios.put(`${user_service}/api/user/update/resume`,formData,{
-                
-                headers:{
+            const { data } = await axios.put(`${user_service}/api/user/update/resume`, formData, {
+
+                headers: {
                     Authorization: `Bearer ${token}`
                 }
             });
@@ -87,18 +86,18 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
             } else {
                 toast.error("An unexpected error occurred.");
             }
-        }finally{
+        } finally {
             setLoading(false);
         }
     }
 
-    async function updateUser(name:string,phoneNumber:string,bio:string) {
+    async function updateUser(name: string, phoneNumber: string, bio: string) {
         setBtnLoading(true);
         try {
-            const {data} = await axios.put(`${user_service}/api/user/update/profile`,{name,phoneNumber,bio},{
-                    headers:{
-                        Authorization: `Bearer ${token}`,
-                    }
+            const { data } = await axios.put(`${user_service}/api/user/update/profile`, { name, phoneNumber, bio }, {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                }
             });
             toast.success(data.message);
             fetchUser();
@@ -108,7 +107,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
             } else {
                 toast.error("An unexpected error occurred.");
             }
-        }finally{
+        } finally {
             setBtnLoading(false);
         }
     }
@@ -117,13 +116,14 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
         setUser(null);
         setIsAuth(false);
         toast.success("User LoggedOut Successfully.!")
+        redirect('/login');
     }
 
-    async function addSkill(skillname:string,setSkill:React.Dispatch<React.SetStateAction<string | "">>) {
+    async function addSkill(skillname: string, setSkill: React.Dispatch<React.SetStateAction<string | "">>) {
         setBtnLoading(true);
         try {
-            const {data} = await axios.post(`${user_service}/api/user/skill/add`,{skillname},{
-                headers:{
+            const { data } = await axios.post(`${user_service}/api/user/skill/add`, { skillname }, {
+                headers: {
                     Authorization: `Bearer ${token}`
                 }
             })
@@ -136,22 +136,56 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
             } else {
                 toast.error("An unexpected error occurred.");
             }
-        }finally{
+        } finally {
             setBtnLoading(false);
         }
     }
 
-    
-async function removeSkill(skillname:string) {
+    async function applyJob(job_id: number) {
+        try {
+            setBtnLoading(true);
+
+            const { data } = await axios.post(
+                `${user_service}/api/user/apply/job`,
+                { job_id },
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                }
+            );
+
+            toast.success(data.message || "Applied successfully!");
+            fetchApplications();
+        } catch (error: unknown) {
+            console.error(error);
+
+            if (axios.isAxiosError(error)) {
+                const message =
+                    error.response?.data?.message ||
+                    error.message ||
+                    "Something went wrong";
+                toast.error(message);
+            } else if (error instanceof Error) {
+                toast.error(error.message);
+            } else {
+                toast.error("Unexpected error occurred");
+            }
+        } finally {
+            setBtnLoading(false);
+        }
+    }
+
+    async function removeSkill(skillname: string) {
         setBtnLoading(true);
         try {
-            const {data} = await axios.put(`${user_service}/api/user/skill/delete`,{skillname},{
-                headers:{
+            const { data } = await axios.put(`${user_service}/api/user/skill/delete`, { skillname }, {
+                headers: {
                     Authorization: `Bearer ${token}`
                 }
             })
             toast.success(data.message);
-         
+
             fetchUser();
         } catch (error: unknown) {
             if (axios.isAxiosError(error) && error.response) {
@@ -159,12 +193,29 @@ async function removeSkill(skillname:string) {
             } else {
                 toast.error("An unexpected error occurred.");
             }
-        }finally{
+        } finally {
             setBtnLoading(false);
         }
     }
+    const [applications,setApplications] = useState<Application[]| null>(null)
+
+    async function fetchApplications() {
+        try {
+            const {data} = await axios.get(`${user_service}/api/user/application/all`,{
+                headers:{
+                    Authorization: `Bearer ${token}`
+                }
+            });
+
+            setApplications(data.applications);
+
+        } catch (error) {
+            console.log(error);
+        }
+    }
     useEffect(() => {
-        fetchUser()
+        fetchUser();
+        fetchApplications();
     }, []);
 
     return (
@@ -183,8 +234,11 @@ async function removeSkill(skillname:string) {
                 updateResume,
                 updateUser,
                 addSkill,
-                removeSkill
-                
+                removeSkill,
+                applyJob,
+                applications,
+                fetchApplications
+
             }}
         >
             {children}

@@ -18,7 +18,7 @@ const LoginPage = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [btnLoading, setBtnLoading] = useState(false);
-  const { isAuth, setIsAuth, loading, setUser } = useAppData();
+  const { isAuth, setIsAuth, loading, setUser , fetchApplications } = useAppData();
   const router = useRouter();
  
    // ✅ redirect AFTER render
@@ -49,6 +49,7 @@ if(loading)
       });
       setUser(data.userObject);
       setIsAuth(true);
+      fetchApplications();
       //Redirect to homePage after login here:-
       router.push('/');
     } catch (err: unknown) {
@@ -72,7 +73,7 @@ if(loading)
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold mb-2">
-            Welcome Backe To{" "}
+            Welcome Back To{" "}
             <span className="bg-linear-to-r from bg-blue-600 to-blue-800 bg-clip-text text-transparent">
               Hire
             </span>
