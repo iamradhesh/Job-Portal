@@ -1,30 +1,31 @@
-'use client'
-
-import { useAppData } from '@/context/AppContext';
-import React from 'react'
-import Loading from '../components/loading';
-import Info from './components/info';
-import Skills from './components/skills';
+"use client"
+import { useAppData } from "@/context/AppContext";
+import Loading from "../components/loading";
+import Company from "./components/company";
+import Info from "./components/info";
+import Skills from "./components/skills";
 
 const AccountPage = () => {
-    const {isAuth,user,loading} = useAppData();
+  const { user, loading } = useAppData();
 
-    if(loading)
-    {
-        return <Loading />
-    }
+  if (loading) return <Loading />;
+
   return (
     <>
-    {
-        user && <div className="w-[90%] md:w-[60%] m-auto">
-            <Info user={user} isYourAccount={true} />
-            {
-              user.role === "jobseeker" && <Skills user={user} isYourAccount={true} />
-            }
+      {user && (
+        <div className="w-[90%] md:w-[60%] m-auto space-y-6">
+          <Info user={user} isYourAccount={true} />
+
+          {user.role === "jobseeker" && (
+            <Skills user={user} isYourAccount={true} />
+          )}
+
+          {/* ✅ Recruiter tools ONLY on own profile */}
+          {user.role === "recruiter" && <Company />}
         </div>
-    }
+      )}
     </>
-  )
-}
+  );
+};
 
 export default AccountPage;

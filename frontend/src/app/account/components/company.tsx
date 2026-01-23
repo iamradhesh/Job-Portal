@@ -3,10 +3,12 @@
 import { job_service, useAppData } from "@/context/AppContext";
 import React, { useEffect, useRef, useState } from "react";
 import Cookies from "js-cookie";
-import axios from "axios";
+import axios, { AxiosError } from "axios";
+
 import toast from "react-hot-toast";
 import Loading from "@/app/components/loading";
-import { Card, CardDescription, CardTitle } from "@/components/ui/card";
+console.log("🔥 Company component rendered");
+
 import {
   Briefcase,
   Building2,
@@ -14,15 +16,14 @@ import {
   FileText,
   Globe,
   Plus,
-  Trash,
   Trash2,
 } from "lucide-react";
 import { Button } from "@/app/components/ui/button";
 import { Company as CompanyType } from "@/types";
 import Image from "next/image";
 import Link from "next/link";
-import { Dialog } from "@radix-ui/react-dialog";
 import {
+  Dialog,
   DialogContent,
   DialogFooter,
   DialogHeader,
@@ -31,49 +32,46 @@ import {
 } from "@/app/components/ui/dialog";
 import { Label } from "@/app/components/ui/label";
 import { Input } from "@/app/components/ui/input";
+import { Card, CardDescription, CardTitle } from "@/components/ui/card";
+
 const Company = () => {
-  const { loading } = useAppData();
-
+  const { user } = useAppData();
   const addRef = useRef<HTMLButtonElement | null>(null);
+  console.log("USER:", user);
 
-  const openDialog = () => {
-    addRef.current?.click();
-  };
-
-  const [name, setName] = useState<string>("");
-  const [description, setDescription] = useState<string>("");
-  const [website, setWebsite] = useState<string>("");
+  // ✅ ALL HOOKS FIRST (no early return before hooks)
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const [website, setWebsite] = useState("");
   const [logo, setLogo] = useState<File | null>(null);
-  const [btnLoading, setBtnLoading] = useState<boolean>(false);
+  const [btnLoading, setBtnLoading] = useState(false);
   const [companies, setCompanies] = useState<CompanyType[]>([]);
-  const [companyLoading, setCompanyLoading] = useState<boolean>(true);
-  const {user} = useAppData();
+  const [companyLoading, setCompanyLoading] = useState(true);
+
+  const token = Cookies.get("token") || "";
+  const isRecruiter = user?.role === "recruiter";
+
   const clearData = () => {
     setName("");
     setDescription("");
     setWebsite("");
     setLogo(null);
   };
-  const token = Cookies.get("token") || "";
+
+  const openDialog = () => addRef.current?.click();
 
   async function fetchCompanies() {
+    if (!token || !isRecruiter) return;
+
     try {
-      // console.log("fetchCompanies called");
-      // console.log("job_service:", job_service);
-      // console.log("token:", token);
       setCompanyLoading(true);
-
       const { data } = await axios.get(`${job_service}/api/job/company/all`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { Authorization: `Bearer ${token}` },
       });
-
-      // console.log("API response:", data);
-      setCompanies(data.companies);
+      setCompanies(data.companies || []);
     } catch (error) {
-      console.log("API error:", error);
-    }finally{
+      console.error("API error fetching companies:", error);
+    } finally {
       setCompanyLoading(false);
     }
   }
@@ -84,14 +82,14 @@ const Company = () => {
       return;
     }
 
-    const formData = new FormData();
-    formData.append("name", name);
-    formData.append("description", description);
-    formData.append("website", website);
-    formData.append("file", logo);
-
     try {
       setBtnLoading(true);
+      const formData = new FormData();
+      formData.append("name", name);
+      formData.append("description", description);
+      formData.append("website", website);
+      formData.append("file", logo);
+
       const { data } = await axios.post(
         `${job_service}/api/job/company/new`,
         formData,
@@ -100,247 +98,219 @@ const Company = () => {
             Authorization: `Bearer ${token}`,
             "Content-Type": "multipart/form-data",
           },
-        }
+        },
       );
-      toast.success(data.message);
 
+      toast.success(data.message || "Company added successfully");
       clearData();
       fetchCompanies();
-    } catch (error) {
-      toast.error("Failed to add company");
-      console.log(error);
+      addRef.current?.click();
+    } catch (error: unknown) {
+      const err = error as AxiosError<{ message?: string }>;
+
+      toast.error(
+        err.response?.data?.message || err.message || "Failed to add company",
+      );
     } finally {
       setBtnLoading(false);
     }
   }
-  
+
   async function deleteCompanyHandler(id: string) {
-   if(confirm("Are you sure you want to delete this company?")){
-         try {
+    if (!window.confirm("Are you sure you want to delete this company?"))
+      return;
+
+    try {
       setBtnLoading(true);
       const { data } = await axios.delete(
         `${job_service}/api/job/company/${id}`,
         {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
+          headers: { Authorization: `Bearer ${token}` },
+        },
       );
-      toast.success(data.message);
-    } catch (error) {
+      toast.success(data.message || "Company deleted");
+      fetchCompanies();
+    } catch {
       toast.error("Failed to delete company");
-      console.log(error);
     } finally {
       setBtnLoading(false);
     }
   }
-}
-  useEffect(() => {
-    const fetchData = async () => {
-      await fetchCompanies();
-    };
-    fetchData();
-  }, []);
 
-  if (loading) {
-    return <Loading />;
-  }
+  useEffect(() => {
+    if (isRecruiter) fetchCompanies();
+  }, [token, isRecruiter]);
+
+  // 🔐 UI GUARD (after hooks)
+  if (!user || !isRecruiter) return null;
+
   return (
-    <div className="max-w-7xl mx-auto px-4 py-6">
-      {
-        user && user.role === "recruiter" && 
-        <Card className="shadow-lg border-2 overflow-hidden">
-        <div className="bg-blue-500 p-6 border-b">
+    <div className="max-w-7xl mx-auto py-2">
+      <Card className="shadow-lg border-2 overflow-hidden">
+        {/* Header */}
+        <div className="bg-blue-600 p-6 border-b">
           <div className="flex items-center justify-between flex-wrap gap-4">
             <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-lg bg-blue-100 dark:bg-blue-900 flex items-center justify-center">
-                <Building2
-                  size={20}
-                  className="text-blue-600 dark:text-blue-300"
-                />
+              <div className="h-12 w-12 rounded-xl bg-white/20 flex items-center justify-center">
+                <Building2 size={24} className="text-white" />
+              </div>
+              <div>
+                <CardTitle className="text-white text-2xl font-bold">
+                  My Companies
+                </CardTitle>
+                <CardDescription className="text-blue-100 font-medium">
+                  Manage Your Business Profiles ({companies.length}/3)
+                </CardDescription>
               </div>
             </div>
-            <CardTitle className="text-white text-2xl font-bold">
-              My Companies
-            </CardTitle>
-            <CardDescription className="text-sm mt-1 text-white">
-              Manage Your Registered Companies ({companies.length}/3)
-            </CardDescription>
+
             {companies.length < 3 && (
-              <Button onClick={openDialog} className="gap-2">
-                <Plus size={16} />
+              <Button onClick={openDialog} variant="secondary">
+                <Plus size={18} className="mr-2" />
                 Add Company
               </Button>
             )}
           </div>
         </div>
 
-       {
-        companyLoading ? <Loading />: <div className="p-6">
-          {companies.length > 0 ? (
-            <div className="grid gap-4">
-              {companies.map((c) => (
-                <div
-                  key={c.company_id}
-                  className="flex items-center gap-4 p-4 rounded-lg border-2 hover:border-blue-500 transition-all bg-background"
-                >
-                  <div className="h-16 w-16 rounded-full border-2 overflow-hidden shrink-0 bg-background">
-                    <Image
-                      src={c.logo}
-                      width={64}
-                      height={64}
-                      alt="company logo"
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                  {/* Company INFO */}
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold text-lg mb-1 truncate">
-                      {c.name}
-                    </h3>
-                    <p className="text-sm opacity-70 line-clamp-2 mb-2">
-                      {c.description}
-                    </p>
-                    <Link
-                      href={c.website}
-                      target="_blank"
-                      className="text-xs text-blue-500 hover:underline flex items-center gap-1"
-                    >
-                      <Globe size={12} />
-                      {c.website}
-                    </Link>
-                  </div>
-                  {/* Actions */}
-                  <div className="flex items-center gap-2 shrink-0">
-                    <Link href={`/company/${c.company_id}`}>
-                      <Button
-                        className="h-9 w-9"
-                        variant={"outline"}
-                        size={"icon"}
-                      >
-                        <Eye size={16} />
-                      </Button>
-                    </Link>
+        {companyLoading ? (
+          <div className="p-10 flex justify-center">
+            <Loading />
+          </div>
+        ) : (
+          <div className="p-6">
+            {companies.length > 0 ? (
+              <div className="grid gap-4">
+                {companies.map((c) => (
+                  <div
+                    key={c.company_id}
+                    className="flex items-center gap-4 p-4 rounded-xl border-2 bg-card"
+                  >
+                    <div className="h-16 w-16 rounded-lg border-2 overflow-hidden shrink-0 bg-muted">
+                      <Image
+                        src={c.logo}
+                        width={64}
+                        height={64}
+                        alt={c.name}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
 
-                    <Button
-                      className="h-9 w-9"
-                      variant={"destructive"}
-                      size={"icon"}
-                      onClick={() => deleteCompanyHandler(c.company_id)}
-                    >
-                      <Trash2 size={16} />
-                    </Button>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-bold text-lg truncate">{c.name}</h3>
+                      <p className="text-sm text-muted-foreground line-clamp-1 mb-1">
+                        {c.description}
+                      </p>
+                      <Link
+                        href={
+                          c.website.startsWith("http")
+                            ? c.website
+                            : `https://${c.website}`
+                        }
+                        target="_blank"
+                        className="text-xs text-blue-500 hover:underline flex items-center gap-1 font-medium"
+                      >
+                        <Globe size={14} />
+                        {c.website}
+                      </Link>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <Link href={`/company/${c.company_id}`}>
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          className="rounded-full"
+                        >
+                          <Eye size={18} />
+                        </Button>
+                      </Link>
+                      <Button
+                        variant="destructive"
+                        size="icon"
+                        className="rounded-full"
+                        disabled={btnLoading}
+                        onClick={() => deleteCompanyHandler(c.company_id)}
+                      >
+                        <Trash2 size={18} />
+                      </Button>
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <>
-              <div className="text-center py-12">
-                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 dark:bg-gray-800 mb-4">
-                  <Building2
-                    size={32}
-                    className="text-gray-500 dark:text-gray-400"
-                  />
-                </div>
-                <CardDescription className="text-base mb-4">
-                  No companies registered yet.
-                </CardDescription>
-                <p className="text-sm opacity-60">
-                  Add Your First Company To Start Posting jobs
-                </p>
+                ))}
               </div>
-            </>
-          )}
-        </div>
-       }
+            ) : (
+              <div className="text-center py-12 border-2 border-dashed rounded-2xl">
+                <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-muted mb-4">
+                  <Building2 size={40} className="text-muted-foreground" />
+                </div>
+                <h3 className="text-lg font-semibold">
+                  No companies registered
+                </h3>
+                <p className="text-sm text-muted-foreground mb-6">
+                  Add your first company to start posting job openings.
+                </p>
+                <Button onClick={openDialog}>Register Company Now</Button>
+              </div>
+            )}
+          </div>
+        )}
       </Card>
-      }
+
       {/* Add Company Dialog */}
       <Dialog>
         <DialogTrigger asChild>
-          <Button className="hidden" ref={addRef}></Button>
+          <Button className="hidden" ref={addRef}>
+            Open
+          </Button>
         </DialogTrigger>
+
         <DialogContent className="sm:max-w-[550px]">
           <DialogHeader>
             <DialogTitle className="text-2xl flex items-center gap-2">
-              <Building2 className="text-blue-600" />
-              Add New Company
+              <Plus className="text-blue-600" />
+              Register New Company
             </DialogTitle>
           </DialogHeader>
-          <div className="space-y-5 py-4">
+
+          <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label
-                htmlFor="name"
-                className="text-sm font-medium flex items-center gap-2"
-              >
-                <Briefcase size={16} /> Company Name
-              </Label>
-              <Input
-                id="name"
-                type="text"
-                placeholder="Enter Company Name"
-                className="h-11"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-              />
+              <Label>Company Name</Label>
+              <Input value={name} onChange={(e) => setName(e.target.value)} />
             </div>
 
             <div className="space-y-2">
-              <Label
-                htmlFor="description"
-                className="text-sm font-medium flex items-center gap-2"
-              >
-                <FileText size={16} /> Company Description
-              </Label>
+              <Label>Description</Label>
               <Input
-                id="description"
-                type="text"
-                placeholder="Enter Company Description"
-                className="h-11"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
               />
             </div>
 
             <div className="space-y-2">
-              <Label
-                htmlFor="website"
-                className="text-sm font-medium flex items-center gap-2"
-              >
-                <Globe size={16} /> Company Website
-              </Label>
+              <Label>Website</Label>
               <Input
-                id="website"
-                type="text"
-                placeholder="www.example.com"
-                className="h-11"
                 value={website}
                 onChange={(e) => setWebsite(e.target.value)}
               />
             </div>
 
             <div className="space-y-2">
-              <Label
-                htmlFor="logo"
-                className="text-sm font-medium flex items-center gap-2"
-              >
-                <Briefcase size={16} /> Company Logo
-              </Label>
+              <Label>Company Logo</Label>
               <Input
-                id="logo"
                 type="file"
                 accept="image/*"
-                className="h-11 cursor-pointer"
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setLogo(e.target.files?.[0] || null)}  
-                
+                onChange={(e) => setLogo(e.target.files?.[0] || null)}
               />
             </div>
           </div>
 
           <DialogFooter>
-            <Button disabled={btnLoading} onClick={addCompanyHandler} className="w-full h-11">
-              {btnLoading ? "Adding..." : "Add Company"}
+            <Button
+              disabled={btnLoading}
+              onClick={addCompanyHandler}
+              className="w-full"
+            >
+              {btnLoading ? "Processing..." : "Create Company Profile"}
             </Button>
           </DialogFooter>
         </DialogContent>

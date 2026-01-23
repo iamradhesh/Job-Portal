@@ -1,3 +1,4 @@
+"use client"
 import { Card } from "@/components/ui/card";
 import { AccountProps } from "@/types";
 import Image from "next/image";
@@ -382,7 +383,7 @@ const Info: React.FC<AccountProps> = ({ user, isYourAccount }) => {
 
         </DialogContent>
       </Dialog>
-      <Company />
+      
     </div>
   );
 };
