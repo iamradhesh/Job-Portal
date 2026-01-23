@@ -405,13 +405,45 @@ export const getAllJobs = TryCatch(
 //Get Single Job Details By ID Controller:-
 
 export const getSingleJob = TryCatch(async (req: AuthenticatedRequest, res) => {
-  const [job] =
-    await sql`SELECT * FROM jobs WHERE job_id = ${req.params.jobId} `;
+  const jobId = req.params.jobId;
+
+  const [job] = await sql`
+    SELECT 
+      j.job_id,
+      j.title,
+      j.description,
+      j.salary,
+      j.location,
+      j.job_type,
+      j.openings,
+      j.role,
+      j.work_location,
+      j.is_active,
+      j.created_at,
+      j.updated_at,
+      j.posted_by_recruiter_id,
+
+      c.company_id,
+      c.name AS company_name,
+      c.logo AS company_logo
+
+    FROM jobs j
+    JOIN companies c ON j.company_id = c.company_id
+    WHERE j.job_id = ${jobId}
+  `;
+
+  if (!job) {
+    return res.status(404).json({
+      status: "Job not found",
+    });
+  }
+
   res.status(200).json({
-    status: "Job Fetched Successfully.!",
+    status: "Job fetched successfully!",
     job,
   });
 });
+
 
 //Get All APplications For A Job Controller:-
 export const getAllApplicationsForJob = TryCatch(
