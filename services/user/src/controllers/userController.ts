@@ -342,20 +342,20 @@ export const applyForJob = TryCatch(
 
     const now = Date.now();
 
-    // const subTime = req.user?.subscription
-    //   ? new Date(req.user.subscription).getTime()
-    //   : 0;
+    const subTime = req.user?.subscription
+      ? new Date(req.user.subscription).getTime()
+      : 0;
 
-    // const isSubscribed = subTime > now;
+    const isSubscribed = subTime > now;
 
-    // if (!isSubscribed) {
-    //   throw new ErrorHandler(403, "Please subscribe to apply for jobs");
-    // }
+    if (!isSubscribed) {
+      throw new ErrorHandler(403, "Please subscribe to apply for jobs");
+    }
     let newApplication;
 
     try {
       [newApplication] =
-        await sql`INSERT INTO applications (job_id,applicant_id,applicant_email,resume,subscribe) VALUES (${job_id},${applicant_id},${user?.email},${resume},${true})`;
+        await sql`INSERT INTO applications (job_id,applicant_id,applicant_email,resume,subscribe) VALUES (${job_id},${applicant_id},${user?.email},${resume},${isSubscribed})`;
     } catch (error: any) {
       console.log("Error While Applying:", error);
 

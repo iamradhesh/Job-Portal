@@ -444,6 +444,47 @@ export const getSingleJob = TryCatch(async (req: AuthenticatedRequest, res) => {
   });
 });
 
+// For Jobseeker - Get all applications by the user
+export const getAllApplicationsForUser = TryCatch(
+  async (req: AuthenticatedRequest, res) => {
+    const user = req.user;
+
+    if (!user) throw new ErrorHandler(401, "Authentication Required");
+    if (user.role !== "jobseeker")
+      throw new ErrorHandler(403, "Only jobseekers can view their applications");
+
+    // JOIN with jobs and companies to get complete information
+    const applications = await sql`
+      SELECT 
+        a.application_id,
+        a.job_id,
+        a.applicant_id,
+        a.applicant_email,
+        a.status,
+        a.resume,
+        a.applied_at,
+        a.subscribe,
+        j.title as job_title,
+        j.salary as job_salary,
+        j.location as job_location,
+        j.description as job_description,
+        j.job_type,
+        j.work_location,
+        c.name as company_name,
+        c.logo as company_logo
+      FROM applications a
+      INNER JOIN jobs j ON a.job_id = j.job_id
+      INNER JOIN companies c ON j.company_id = c.company_id
+      WHERE a.applicant_id = ${user.user_id}
+      ORDER BY a.subscribe DESC, a.applied_at DESC
+    `;
+
+    res.status(200).json({
+      message: "Applications Fetched Successfully",
+      applications,
+    });
+  }
+);
 
 //Get All APplications For A Job Controller:-
 export const getAllApplicationsForJob = TryCatch(

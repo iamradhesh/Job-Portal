@@ -49,6 +49,48 @@ async function initDB() {
       skill_id INT NOT NULL REFERENCES skills(skill_id) ON DELETE CASCADE,
       PRIMARY KEY (user_id, skill_id)
     )`;
+    await sql `
+    CREATE TABLE IF NOT EXISTS payments (
+    payment_id SERIAL PRIMARY KEY,
+
+    user_id INT NOT NULL,
+    
+    -- Razorpay references
+    razorpay_order_id VARCHAR(100) UNIQUE NOT NULL,
+    razorpay_payment_id VARCHAR(100) UNIQUE,
+    razorpay_signature VARCHAR(255),
+
+    -- Business data
+    amount INT NOT NULL,               -- in paise (e.g. 11900)
+    currency VARCHAR(10) DEFAULT 'INR',
+    purpose VARCHAR(50) DEFAULT 'subscription',
+
+    -- Payment state
+    status VARCHAR(20) NOT NULL CHECK (
+        status IN ('created', 'paid', 'failed', 'refunded')
+    ),
+
+    -- Subscription info
+    subscription_days INT DEFAULT 30,
+    subscription_expiry TIMESTAMP,
+
+    -- Raw gateway response (for audit/debug)
+    gateway_response JSONB,
+
+    -- Security & tracking
+    ip_address VARCHAR(45),
+    user_agent TEXT,
+
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_user
+        FOREIGN KEY(user_id) 
+        REFERENCES users(user_id)
+        ON DELETE CASCADE
+);
+
+    `
     console.log('✅ Database initialized successfully.');
   } catch (error) {
     console.error('❌ DB init error:', error);
