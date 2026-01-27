@@ -1,19 +1,22 @@
-"use client"
+"use client";
 import { Card } from "@/components/ui/card";
 import { AccountProps } from "@/types";
 import Image from "next/image";
 import React, { ChangeEvent, useRef, useState, useEffect } from "react";
 import profileIcon from "@/assets/profile.png";
 import {
-  BookA,
+  AlertTriangle,
   Briefcase,
   Camera,
+  CheckCircle2,
+  Crown,
   Edit,
   FileText,
   Mail,
   NotepadText,
   Phone,
   PhoneIcon,
+  RefreshCcw,
   UserIcon,
 } from "lucide-react";
 import Link from "next/link";
@@ -21,13 +24,20 @@ import toast from "react-hot-toast";
 import { Button } from "@/app/components/ui/button";
 import { Input } from "@/app/components/ui/input";
 import { useAppData } from "@/context/AppContext";
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/app/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/app/components/ui/dialog";
 import { Label } from "@/app/components/ui/label";
-import Company from "./company";
+import { useRouter } from "next/navigation";
 
 const Info: React.FC<AccountProps> = ({ user, isYourAccount }) => {
   const [isMounted, setIsMounted] = useState(false);
- 
+
   const [uploadingPic, setUploadingPic] = useState(false);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const editRef = useRef<HTMLButtonElement | null>(null);
@@ -36,7 +46,9 @@ const Info: React.FC<AccountProps> = ({ user, isYourAccount }) => {
   const [name, setName] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [bio, setBio] = useState("");
-  const { updateProfilePic, updateResume,btnLoading,updateUser} = useAppData();
+  const { updateProfilePic, updateResume, btnLoading, updateUser } =
+    useAppData();
+  const router = useRouter();
 
   useEffect(() => {
     setIsMounted(true);
@@ -56,11 +68,8 @@ const Info: React.FC<AccountProps> = ({ user, isYourAccount }) => {
   const changeHandler = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
 
-    if (!file) {
-      return;
-    }
+    if (!file) return;
 
-    // Validate file type
     const validImageTypes = [
       "image/jpeg",
       "image/jpg",
@@ -73,8 +82,7 @@ const Info: React.FC<AccountProps> = ({ user, isYourAccount }) => {
       return;
     }
 
-    // Validate file size (e.g., max 5MB)
-    const maxSize = 5 * 1024 * 1024; // 5MB
+    const maxSize = 5 * 1024 * 1024;
     if (file.size > maxSize) {
       toast.error("Image size should be less than 5MB");
       return;
@@ -82,95 +90,35 @@ const Info: React.FC<AccountProps> = ({ user, isYourAccount }) => {
 
     try {
       setUploadingPic(true);
-
-      // Compress image before upload if it's too large
-      const compressedFile = await compressImage(file);
-
       const formData = new FormData();
-      formData.append("file", compressedFile);
+      formData.append("file", file);
       await updateProfilePic(formData);
     } catch (error) {
       console.error("Error uploading profile picture:", error);
       toast.error("Failed to upload profile picture");
     } finally {
       setUploadingPic(false);
-      // Reset input value to allow uploading the same file again
-      if (inputRef.current) {
-        inputRef.current.value = "";
-      }
+      if (inputRef.current) inputRef.current.value = "";
     }
   };
 
-  // Helper function to compress image
-  const compressImage = (file: File): Promise<File> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = (event) => {
-        const img = new window.Image();
-        img.src = event.target?.result as string;
-        img.onload = () => {
-          const canvas = document.createElement("canvas");
-          let width = img.width;
-          let height = img.height;
-
-          // Resize if image is too large
-          const maxDimension = 1024;
-          if (width > maxDimension || height > maxDimension) {
-            if (width > height) {
-              height = (height / width) * maxDimension;
-              width = maxDimension;
-            } else {
-              width = (width / height) * maxDimension;
-              height = maxDimension;
-            }
-          }
-
-          canvas.width = width;
-          canvas.height = height;
-          const ctx = canvas.getContext("2d");
-          ctx?.drawImage(img, 0, 0, width, height);
-
-          canvas.toBlob(
-            (blob) => {
-              if (blob) {
-                const compressedFile = new File([blob], file.name, {
-                  type: "image/jpeg",
-                  lastModified: Date.now(),
-                });
-                resolve(compressedFile);
-              } else {
-                reject(new Error("Canvas to Blob conversion failed"));
-              }
-            },
-            "image/jpeg",
-            0.8 // Compression quality (0.8 = 80%)
-          );
-        };
-        img.onerror = reject;
-      };
-      reader.onerror = reject;
-    });
-  };
-
   const updateProfileHandler = () => {
-    // Implement profile update logic here
-    updateUser(name,phoneNumber,bio);
+    updateUser(name, phoneNumber, bio);
   };
 
   const changeResume = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      if (file.type !== "application/pdf") {
-        toast.error("Please Upload a PDF File");
-        return;
-      }
-      const formData = new FormData();
-      formData.append("file", file);
-      // Add your resume upload logic here
-      updateResume(formData);
+    if (!file) return;
+
+    if (file.type !== "application/pdf") {
+      toast.error("Please Upload a PDF File");
+      return;
     }
+    const formData = new FormData();
+    formData.append("file", file);
+    updateResume(formData);
   };
+
   const handleResumeClick = () => {
     resumeRef.current?.click();
   };
@@ -191,14 +139,14 @@ const Info: React.FC<AccountProps> = ({ user, isYourAccount }) => {
                   priority
                   unoptimized={!!user.profile_pic}
                 />
-                {/* Loading overlay - only render after mount */}
+
                 {isMounted && uploadingPic && (
                   <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center rounded-full">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
                   </div>
                 )}
               </div>
-              {/* Edit Option for your Profile Pic - only render after mount */}
+
               {isMounted && isYourAccount && (
                 <>
                   <Button
@@ -223,13 +171,13 @@ const Info: React.FC<AccountProps> = ({ user, isYourAccount }) => {
             </div>
           </div>
         </div>
+
         {/* main Content */}
         <div className="pt-20 pb-8 px-8">
           <div className="flex items-start justify-between flex-wrap gap-4">
             <div className="space-y-1">
               <div className="flex items-center gap-3">
                 <h1 className="text-3xl font-bold">{user.name}</h1>
-                {/* Edit Button */}
                 {isYourAccount && (
                   <Button
                     variant={"ghost"}
@@ -247,6 +195,7 @@ const Info: React.FC<AccountProps> = ({ user, isYourAccount }) => {
               </div>
             </div>
           </div>
+
           {/* Bio Section */}
           {user.role === "jobseeker" && user.bio && (
             <div className="mt-6 p-4 rounded-lg border">
@@ -257,14 +206,15 @@ const Info: React.FC<AccountProps> = ({ user, isYourAccount }) => {
               <p className="text-base leading-relaxed">{user.bio}</p>
             </div>
           )}
+
           {/* Contact Info */}
           <div className="mt-8">
             <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
               <Mail size={20} className="text-blue-600" />
               Contact Information
             </h2>
+
             <div className="grid md:grid-cols-2 gap-4">
-              {/* email */}
               <div className="flex items-center gap-3 p-4 rounded-lg border hover:border-blue-500 transition-colors">
                 <div className="h-10 w-10 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center">
                   <Mail size={18} className="text-blue-600" />
@@ -275,7 +225,6 @@ const Info: React.FC<AccountProps> = ({ user, isYourAccount }) => {
                 </div>
               </div>
 
-              {/* Phone */}
               <div className="flex items-center gap-3 p-4 rounded-lg border hover:border-blue-500 transition-colors">
                 <div className="h-10 w-10 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center">
                   <Phone size={18} className="text-blue-600" />
@@ -287,16 +236,19 @@ const Info: React.FC<AccountProps> = ({ user, isYourAccount }) => {
               </div>
             </div>
           </div>
+
           {/* Resume */}
-          {user.role === "jobseeker" && user.resume &&  (
+          {user.role === "jobseeker" && user.resume && (
             <div className="mt-8">
               <h2 className="text-lg font-semibold mt-4 flex items-center gap-2">
                 <NotepadText size={20} className="text-blue-600" /> Resume
               </h2>
+
               <div className="flex items-center gap-3 p-4 rounded-lg border hover:border-blue-500 transition-colors">
                 <div className="h-12 w-12 rounded-lg bg-red-100 dark:bg-red-900 flex items-center justify-center">
                   <NotepadText size={20} className="text-red-600" />
                 </div>
+
                 <div className="flex-1">
                   <p className="text-sm font-medium">Resume Document</p>
                   <Link
@@ -307,7 +259,7 @@ const Info: React.FC<AccountProps> = ({ user, isYourAccount }) => {
                     View Resume PDF
                   </Link>
                 </div>
-                {/* Edit Button */}
+
                 {isYourAccount && (
                   <div>
                     <Button
@@ -318,72 +270,162 @@ const Info: React.FC<AccountProps> = ({ user, isYourAccount }) => {
                     >
                       Update
                     </Button>
-                <input
-                  type="file"
-                  ref={resumeRef}
-                  className="hidden"
-                  accept="application/pdf"
-                  onChange={changeResume}
-                />
+                    <input
+                      type="file"
+                      ref={resumeRef}
+                      className="hidden"
+                      accept="application/pdf"
+                      onChange={changeResume}
+                    />
+                  </div>
+                )}
               </div>
+            </div>
+          )}
+
+          {/* Subscription Section */}
+          {isYourAccount && user.role === "jobseeker" && (
+            <div className="mt-8">
+              <h2 className="text-lg font-semibold mt-4 flex items-center gap-2">
+                <Crown size={20} className="text-blue-600" />
+                Subscription Status
+              </h2>
+
+              <div className="p-6 rounded-lg bg-linear-to-br from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-950/20">
+                {!user.subscription ? (
+                  <div className="flex items-center justify-between flex-wrap gap-4">
+                    <div>
+                      <p className="font-semibold text-lg mb-1">
+                        No Active Subscription
+                      </p>
+                      <p className="text-sm opacity-70">
+                        Subscribe To Unlock Premium Features And Benefits
+                      </p>
+                    </div>
+                    <Button
+                      className="gap-2"
+                      onClick={() => router.push("/subscribe")}
+                    >
+                      <Crown size={18} /> Subscribe Now
+                    </Button>
+                  </div>
+                ) : new Date(user.subscription).getTime() > Date.now() ? (
+                  <div className="flex items-center justify-between flex-wrap gap-4">
+                    <div>
+                      <div className="flex items-center gap-2 mb-2">
+                        <CheckCircle2
+                          size={20}
+                          className="text-green-600"
+                        />
+                        <p className="font-semibold text-lg text-green-600">
+                          Active Subscription
+                        </p>
+                      </div>
+
+                      <p className="text-sm opacity-70">
+                        valid until:{" "}
+                        {new Date(user.subscription).toLocaleDateString(
+                          "en-US",
+                          {
+                            year: "numeric",
+                            month: "long",
+                            day: "numeric",
+                          }
+                        )}
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-green-700 text-white font-medium">
+                      <CheckCircle2 size={18} />
+                      Subscribed
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-between flex-wrap gap-4">
+                    <div className="">
+                      <div className="flex items-center gap-2 mb-2">
+                        <AlertTriangle size={20} className="text-red-600" />
+                        <p className="font-semibold text-lg text-red-600">
+                          Subscription Expired
+                        </p>
+                      </div>
+                      <p className="text-sm opacity-70">Expired On: {" "}
+                        {new Date(user.subscription).toLocaleDateString(
+                          "en-US",
+                          {
+                            year: "numeric",
+                            month: "long",
+                            day: "numeric",
+                          }
+                        )}
+                      </p>
+                    </div>
+                    <Button variant={"destructive"} className="gap-2" onClick={()=>router.push("/subscribe")}>
+                      <RefreshCcw size={18} /> Renew Subscription
+                    </Button>
+                  </div>
                 )}
               </div>
             </div>
           )}
         </div>
-        
       </Card>
-      {/* Dailog Box For Edit */}
+
+      {/* Dialog */}
       <Dialog>
         <DialogTrigger asChild>
           <Button ref={editRef} value={"outline"} className="hidden">
             Edit Profile
           </Button>
         </DialogTrigger>
+
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
             <DialogTitle className="text-2xl">Edit Profile</DialogTitle>
           </DialogHeader>
+
           <div className="space-y-5 py-4">
             <div className="space-y-2">
-              <Label htmlFor="name" className="text-sm font-medium flex items-center gap-2">
+              <Label className="flex items-center gap-2">
                 <UserIcon size={16} /> Full Name
               </Label>
-              <Input id="name" type="text" placeholder="Enter Your name..." className="h-11"
-              value={name} onChange={e=>setName(e.target.value)} />
+              <Input
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+              />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="phone" className="text-sm font-medium flex items-center gap-2">
+              <Label className="flex items-center gap-2">
                 <PhoneIcon size={16} /> Phone
               </Label>
-              <Input id="phone" type="number" placeholder="Enter Your Phone Number..." className="h-11"
-              value={phoneNumber} onChange={e=>setPhoneNumber(e.target.value)} />
+              <Input
+                value={phoneNumber}
+                onChange={(e) => setPhoneNumber(e.target.value)}
+              />
             </div>
-            {
-              user.role === "jobseeker" && (
-                <div className="space-y-2">
-              <Label htmlFor="bio" className="text-sm font-medium flex items-center gap-2">
-                <FileText size={16} /> Bio
-              </Label>
-              <Input id="bio" type="text" placeholder="Enter Your Bio..." className="h-11"
-              value={bio} onChange={e=>setBio(e.target.value)} />
-            </div>
-              )
-            }
+
+            {user.role === "jobseeker" && (
+              <div className="space-y-2">
+                <Label className="flex items-center gap-2">
+                  <FileText size={16} /> Bio
+                </Label>
+                <Input value={bio} onChange={(e) => setBio(e.target.value)} />
+              </div>
+            )}
+
             <DialogFooter>
-              <Button disabled={btnLoading} onClick={updateProfileHandler} className="w-full h-11"
-              type="submit">
-                {
-                  btnLoading?"Saving Changes..." : "Save Changes"
-                }
+              <Button
+                disabled={btnLoading}
+                onClick={updateProfileHandler}
+                className="w-full"
+              >
+                {btnLoading ? "Saving Changes..." : "Save Changes"}
               </Button>
             </DialogFooter>
           </div>
-
         </DialogContent>
       </Dialog>
-      
     </div>
   );
 };

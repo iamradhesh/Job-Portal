@@ -11,6 +11,7 @@ export const auth_service = `http://localhost:5000`;
 export const utils_service = "http://localhost:5001";
 export const user_service = `http://localhost:5002`;
 export const job_service = `http://localhost:5003`;
+export const payment_service = `http://localhost:5004`;
 
 const AppContext = createContext<AppContextTypes | undefined>(undefined);
 
@@ -20,13 +21,14 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
         return Boolean(Cookies.get("token"));
     });
 
-    const [loading, setLoading] = useState<boolean>(false);
+    const [loading, setLoading] = useState<boolean>(true); // Changed to true initially
     const [btnLoading, setBtnLoading] = useState<boolean>(false);
 
     const token = Cookies.get("token");
 
     async function fetchUser() {
         try {
+            setLoading(true);
             const { data } = await axios.get(`${user_service}/api/user/me`, {
                 headers: {
                     Authorization: `Bearer ${token}`
@@ -34,12 +36,12 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
             });
 
             setUser(data);
-            // setIsAuth(true);
-
+            setIsAuth(true);
 
         } catch (error) {
-            console.log("Error While Fetching Currunt User:", error);
-            setIsAuth(false)
+            console.log("Error While Fetching Current User:", error);
+            setIsAuth(false);
+            setUser(null);
         } finally {
             setLoading(false);
         }
@@ -49,7 +51,6 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
         setLoading(true);
         try {
             const { data } = await axios.put(`${user_service}/api/user/update/profile-picture`, formData, {
-
                 headers: {
                     Authorization: `Bearer ${token}`
                 }
@@ -72,7 +73,6 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
         setLoading(true);
         try {
             const { data } = await axios.put(`${user_service}/api/user/update/resume`, formData, {
-
                 headers: {
                     Authorization: `Bearer ${token}`
                 }
@@ -111,6 +111,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
             setBtnLoading(false);
         }
     }
+    
     async function logoutUser() {
         Cookies.set("token", "");
         setUser(null);
@@ -197,12 +198,13 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
             setBtnLoading(false);
         }
     }
-    const [applications,setApplications] = useState<Application[]| null>(null)
+    
+    const [applications, setApplications] = useState<Application[] | null>(null)
 
     async function fetchApplications() {
         try {
-            const {data} = await axios.get(`${user_service}/api/user/application/all`,{
-                headers:{
+            const { data } = await axios.get(`${user_service}/api/user/application/all`, {
+                headers: {
                     Authorization: `Bearer ${token}`
                 }
             });
@@ -213,10 +215,15 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
             console.log(error);
         }
     }
+    
     useEffect(() => {
-        fetchUser();
-        fetchApplications();
-    }, []);
+        if (token) {
+            fetchUser();
+            fetchApplications();
+        } else {
+            setLoading(false);
+        }
+    }, [token]);
 
     return (
         <AppContext.Provider
@@ -237,8 +244,8 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
                 removeSkill,
                 applyJob,
                 applications,
-                fetchApplications
-
+                fetchApplications,
+                fetchUser  // ✅ ADD THIS - This was missing!
             }}
         >
             {children}
@@ -251,7 +258,7 @@ export const useAppData = (): AppContextTypes => {
     const context = useContext(AppContext);
 
     if (!context) {
-        throw new Error("UseAppData must be used within  App Provider");
+        throw new Error("UseAppData must be used within App Provider");
     }
 
     return context;

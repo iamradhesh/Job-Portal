@@ -93,8 +93,9 @@ export interface AppContextTypes {
   addSkill: (skillname:string,setSkill:React.Dispatch<React.SetStateAction<string | "">>)=> Promise<void>
   removeSkill: (skillname:string)=> Promise<void>
   applyJob : (job_id:number) =>Promise<void>
-  applications: Application[] | null;
-  fetchApplications: ()=>Promise<void>
+  applications: Application[] ;
+  fetchApplications: ()=>Promise<void>;
+  fetchUser: () => void;
 }
 
 export interface AppProviderProps {
@@ -154,4 +155,34 @@ export interface Application{
   job_salary: number | null;
   job_location: string | null;
   
+};
+
+declare global {
+  interface Window {
+    Razorpay: new (options: RazorpayOptions) => RazorpayInstance;
+  }
+}
+
+export interface RazorpayOptions {
+  key: string | undefined;
+  amount: number;
+  currency: string;
+  name: string;
+  description?: string;
+  image?: string;
+  order_id: string;
+  handler: (response: RazorpayResponse) => void;
+  theme?: {
+    color?: string;
+  };
+}
+
+export interface RazorpayResponse {
+  razorpay_payment_id: string;
+  razorpay_order_id: string;
+  razorpay_signature: string;
+}
+
+export interface RazorpayInstance {
+  open: () => void;
 }
