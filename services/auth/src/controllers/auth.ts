@@ -144,47 +144,56 @@ export const loginUser = TryCatch(async (req, res, next) => {
 
 export const forgotPassword = TryCatch(async (req, res, next) => {
   const { email } = req.body;
-  console.log("Received body:", req.body);
+  console.log("🔹 Received body:", req.body);
+
   if (!email) {
-    throw new ErrorHandler(400, "email is required");
+    throw new ErrorHandler(400, "Email is required");
   }
-  const users =
-    await sql`SELECT user_id,email FROM users WHERE email =${email}`;
-  if (users.length == 0) {
+
+  const users = await sql`SELECT user_id, email FROM users WHERE email = ${email}`;
+
+  if (users.length === 0) {
+    console.log(`🔹 No user found with email: ${email}`);
     return res.json({
-      message: "if that email exists , we have sent a reset link",
+      message: "If that email exists, we have sent a reset link",
     });
   }
+
   const user: any = users[0];
 
+  // ---------------- Generate Reset Token ----------------
   const resetToken = jwt.sign(
-    {
-      email: user.email,
-      type: "reset",
-    },
+    { email: user.email, type: "reset" },
     process.env.JWT_SECRET as string,
-    {
-      expiresIn: "15m",
-    }
+    { expiresIn: "15m" }
   );
+
   const resetLink = `${process.env.FRONTEND_URL}/reset/${resetToken}`;
-  await redisClient.set(`forgot:${email}`, resetToken, {
-    EX: 900,
-  });
+  console.log("🔹 Reset Link:", resetLink); // For debugging
+
+
+  await redisClient.set(`forgot:${email}`, resetToken, { EX: 900 });
+
+  // ---------------- Prepare Kafka Message ----------------
   const message = {
     to: email,
     subject: "RESET Your Password - hirehub",
     html: forgotPasswordTemplate(resetLink),
   };
 
-  publishToTopic("send-mail", message).catch((error) => {
-    console.log("Failed to send message", error);
-  });
+  try {
+    console.log("📤 Sending message to Kafka:", message);
+    await publishToTopic("send-mail", message);
+    console.log("✅ Message queued successfully for email:", email);
+  } catch (error) {
+    console.error("❌ Failed to queue message to Kafka:", error);
+  }
 
   res.json({
-    message: "if that email exists , we have sent a reset link",
+    message: "If that email exists, we have sent a reset link",
   });
 });
+
 
 //Reset password
 

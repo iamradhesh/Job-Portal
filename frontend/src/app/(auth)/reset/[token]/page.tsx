@@ -1,3 +1,4 @@
+// frontend/src/app/(auth)/reset/[token]/page.tsx
 'use client'
 import { auth_service, useAppData, user_service } from '@/context/AppContext';
 import axios, { AxiosError } from 'axios';

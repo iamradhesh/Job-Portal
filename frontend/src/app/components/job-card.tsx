@@ -1,6 +1,12 @@
 "use client";
 
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { useAppData } from "@/context/AppContext";
 import { Application, Job } from "@/types";
 import {
@@ -14,6 +20,7 @@ import {
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Button } from "./ui/button";
+import toast from "react-hot-toast";
 
 interface JobCardProps {
   job: Job;
@@ -32,6 +39,7 @@ const JobCard: React.FC<JobCardProps> = ({ job }) => {
       });
     }
   }, [applications, job.job_id]);
+  
   const applyJobHandler = (id: number) => {
     applyJob(id);
   };
@@ -109,7 +117,14 @@ const JobCard: React.FC<JobCardProps> = ({ job }) => {
                     <Button
                       disabled={btnLoading}
                       className="flex-1 w-full sm:w-auto gap-2 text-sm sm:text-base h-9 sm:h-10"
-                      onClick={() => applyJobHandler(job.job_id)}
+                      onClick={() => {
+                        if (!user) {
+                          toast.error("Please login to apply for jobs");
+                          return;
+                        }
+                        if (applied) return; // Already applied
+                        applyJobHandler(job.job_id);
+                      }}
                     >
                       <Briefcase size={14} className="sm:w-4 sm:h-4" />
                       Easy Apply
@@ -118,6 +133,26 @@ const JobCard: React.FC<JobCardProps> = ({ job }) => {
                 </>
               )}
             </>
+          )}
+          {!user && job.is_active !== false && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="flex-1 w-full sm:w-auto">
+                    <Button
+                      disabled
+                      className="w-full gap-2 text-sm sm:text-base h-9 sm:h-10"
+                    >
+                      <Briefcase size={14} className="sm:w-4 sm:h-4" />
+                      Easy Apply
+                    </Button>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Login to apply</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           )}
         </div>
         {job.is_active === false && (

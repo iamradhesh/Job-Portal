@@ -1,3 +1,5 @@
+//services/auth/src/app.ts
+import 'dotenv/config';
 import express from 'express';
 import authRoutes from './routes/auth.js';
 import { connectKafka } from './producer.js';
@@ -9,7 +11,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cors())
 // Connect Kafka ONCE
-connectKafka();
+await connectKafka();
 
 // Routes
 app.use('/api/auth', authRoutes);

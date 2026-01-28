@@ -142,40 +142,37 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
         }
     }
 
-    async function applyJob(job_id: number) {
-        try {
-            setBtnLoading(true);
+   async function applyJob(job_id: number) {
+  if (!token) {
+    toast.error("Please login to apply for jobs");
+    return;
+  }
 
-            const { data } = await axios.post(
-                `${user_service}/api/user/apply/job`,
-                { job_id },
-                {
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                    },
-                }
-            );
-
-            toast.success(data.message || "Applied successfully!");
-            fetchApplications();
-        } catch (error: unknown) {
-            console.error(error);
-
-            if (axios.isAxiosError(error)) {
-                const message =
-                    error.response?.data?.message ||
-                    error.message ||
-                    "Something went wrong";
-                toast.error(message);
-            } else if (error instanceof Error) {
-                toast.error(error.message);
-            } else {
-                toast.error("Unexpected error occurred");
-            }
-        } finally {
-            setBtnLoading(false);
-        }
+  try {
+    setBtnLoading(true);
+    const { data } = await axios.post(
+      `${user_service}/api/user/apply/job`,
+      { job_id },
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    toast.success(data.message || "Applied successfully!");
+    fetchApplications();
+  } catch (error: unknown) {
+    console.error(error);
+    if (axios.isAxiosError(error)) {
+      const message =
+        error.response?.data?.message || error.message || "Something went wrong";
+      toast.error(message);
+    } else if (error instanceof Error) {
+      toast.error(error.message);
+    } else {
+      toast.error("Unexpected error occurred");
     }
+  } finally {
+    setBtnLoading(false);
+  }
+}
+
 
     async function removeSkill(skillname: string) {
         setBtnLoading(true);

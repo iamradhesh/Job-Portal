@@ -13,7 +13,7 @@ router.delete("/delete/:jobId", isAuth,deleteJobs);
 router.delete("/company/:companyId",isAuth,deleteCompany);
 router.get("/company/all",isAuth,getAllCompanies);
 router.get("/company/:id",getCompanyDetails);
-router.get("/jobs/all",isAuth,getAllJobs);
+router.get("/jobs/all",getAllJobs);
 router.get("/:jobId",getSingleJob);
 router.get("/application/:jobId", isAuth,getAllApplicationsForJob);
 router.put("/application/update/:applicationId",isAuth,updateApplication);

@@ -93,7 +93,7 @@ export interface AppContextTypes {
   addSkill: (skillname:string,setSkill:React.Dispatch<React.SetStateAction<string | "">>)=> Promise<void>
   removeSkill: (skillname:string)=> Promise<void>
   applyJob : (job_id:number) =>Promise<void>
-  applications: Application[] ;
+  applications: Application[] | null;
   fetchApplications: ()=>Promise<void>;
   fetchUser: () => void;
 }

@@ -347,7 +347,7 @@ export const getCompanyDetails = TryCatch(
 //Get ALL Active Jobs Controller:-
 
 export const getAllJobs = TryCatch(
-  async (req: AuthenticatedRequest, res) => {
+  async (req, res) => {
     const { title, location } = req.query as {
       title?: string;
       location?: string;
@@ -365,7 +365,6 @@ export const getAllJobs = TryCatch(
         j.role,
         j.work_location,
         j.is_active,
-        
         j.created_at,
         c.name AS company_name,
         c.logo AS company_logo,
@@ -400,6 +399,7 @@ export const getAllJobs = TryCatch(
     });
   }
 );
+
 
 
 //Get Single Job Details By ID Controller:-
