@@ -7,11 +7,11 @@ import Cookies from "js-cookie";
 import axios, { AxiosError } from "axios";
 import { redirect } from "next/navigation";
 
-export const auth_service = `http://localhost:5000`;
-export const utils_service = "http://localhost:5001";
-export const user_service = `http://localhost:5002`;
-export const job_service = `http://localhost:5003`;
-export const payment_service = `http://localhost:5004`;
+export const auth_service = `https://job-portal-authservice.onrender.com`;
+export const utils_service = "https://job-portal-utils-n70j.onrender.com";
+export const user_service = `https://job-portal-user-abbp.onrender.com`;
+export const job_service = `https://job-portal-job-l0b6.onrender.com`;
+export const payment_service = `https://job-portal-payment.onrender.com`;
 
 const AppContext = createContext<AppContextTypes | undefined>(undefined);
 
