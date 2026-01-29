@@ -21,7 +21,7 @@ const AccountPage = () => {
             <Skills user={user} isYourAccount={true} />
           )}
           {
-            user.role ==="jobseeker" && <Appliedjobs applications={applications} />
+            user.role ==="jobseeker" && <Appliedjobs applications={applications || []} />
           }
           {/* ✅ Recruiter tools ONLY on own profile */}
           {user.role === "recruiter" && <Company />}
