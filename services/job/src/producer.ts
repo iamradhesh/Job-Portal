@@ -1,88 +1,147 @@
-import { Kafka, type Admin, type Producer } from "kafkajs";
-import fs from "fs";
-import path from "path";
+import "dotenv/config";
+import { Kafka, type Producer, type Admin, logLevel } from "kafkajs";
+import nodemailer from "nodemailer";
 
-// ✅ Use lowercase variable names for instances
+// ---------------- Globals ----------------
 let producer: Producer;
 let admin: Admin;
 
-// Helper to read cert files
-const cert = (file: string) => {
-  if (!process.env.KAFKA_CERTS_PATH) {
-    throw new Error("❌ KAFKA_CERTS_PATH is not defined in .env");
+// ---------------- Logging helper ----------------
+const log = (prefix: string, ...args: any[]) =>
+  console.log(`[${prefix}]`, ...args);
+
+// ---------------- Kafka SSL from ENV ----------------
+const getKafkaSSL = () => {
+  const ca = process.env.KAFKA_CA_CERT;
+  const cert = process.env.KAFKA_CLIENT_CERT;
+  const key = process.env.KAFKA_CLIENT_KEY;
+
+  if (!ca || !cert || !key) {
+    throw new Error("❌ Kafka SSL certs missing in ENV");
   }
-  const filePath = path.resolve(process.env.KAFKA_CERTS_PATH, file);
-  if (!fs.existsSync(filePath)) {
-    throw new Error(`❌ Cert file not found: ${filePath}`);
-  }
-  return fs.readFileSync(filePath, "utf-8");
+
+  return {
+    rejectUnauthorized: true,
+    ca: [ca],
+    cert,
+    key,
+  };
 };
 
+// ---------------- Validate Gmail credentials ----------------
+const getMailCredentials = () => {
+  const user = process.env.MAIL_USER;
+  const pass = process.env.MAIL_PASS;
+  if (!user || !pass)
+    throw new Error("❌ MAIL_USER or MAIL_PASS missing");
+  return { user, pass };
+};
+
+// ---------------- Kafka instance ----------------
+const createKafka = (clientId: string) =>
+  new Kafka({
+    clientId,
+    brokers: [process.env.KAFKA_BROKER!],
+    ssl: getKafkaSSL(),
+    logLevel: logLevel.INFO,
+  });
+
+// ---------------- Connect Kafka ----------------
 export const connectKafka = async () => {
   try {
-    const kafka = new Kafka({
-      clientId: "auth-service",
-      brokers: [process.env.KAFKA_BROKER || "localhost:9092"],
-
-      // 🔐 Aiven mTLS configuration
-      ssl: {
-        rejectUnauthorized: true,
-        ca: [cert("ca.pem")],
-        cert: cert("service.cert"),
-        key: cert("service.key"),
-      },
-    });
+    const kafka = createKafka("auth-service");
 
     // ---------- ADMIN ----------
     admin = kafka.admin();
     await admin.connect();
 
     const topics = await admin.listTopics();
+    log("Kafka", "Existing topics:", topics);
 
     if (!topics.includes("send-mail")) {
       await admin.createTopics({
-        topics: [
-          {
-            topic: "send-mail",
-            numPartitions: 1,
-            replicationFactor: 1,
-          },
-        ],
+        topics: [{ topic: "send-mail", numPartitions: 1, replicationFactor: 1 }],
       });
-      console.log("✅ Topic 'send-mail' created");
+      log("Kafka", "✅ Topic 'send-mail' created");
     }
 
     await admin.disconnect();
 
     // ---------- PRODUCER ----------
-    producer = kafka.producer();
+    producer = kafka.producer({ allowAutoTopicCreation: false });
     await producer.connect();
-
-    console.log("✅ Connected to Kafka Producer");
-  } catch (error) {
-    console.error("❌ Failed to connect to Kafka", error);
+    log("Kafka", "✅ Connected to Kafka Producer");
+  } catch (err) {
+    console.error("❌ Failed to connect to Kafka", err);
+    throw err;
   }
 };
 
+// ---------------- Publish to Kafka ----------------
 export const publishToTopic = async (topic: string, message: any) => {
-  if (!producer) {
-    console.log("❌ Kafka producer is not initialized");
-    return;
-  }
+  if (!producer) throw new Error("Kafka producer not initialized");
 
-  try {
-    await producer.send({
-      topic,
-      messages: [{ value: JSON.stringify(message) }],
-    });
-    console.log("✅ Message published to topic:", topic);
-  } catch (error) {
-    console.error("❌ Error publishing to topic:", error);
-  }
+  log("Producer", `📤 Publishing to ${topic}`);
+  await producer.send({
+    topic,
+    messages: [{ value: JSON.stringify(message) }],
+    acks: -1,
+  });
+  log("Producer", `✅ Message published to ${topic}`);
 };
 
-export const disconnectKafka = async () => {
-  if (producer) {
-    await producer.disconnect();
+// ---------------- Kafka Mail Consumer ----------------
+export const startSendMailConsumer = async () => {
+  try {
+    const kafka = createKafka("mail-service");
+    const consumer = kafka.consumer({ groupId: "mail-service-group" });
+
+    await consumer.connect();
+    await consumer.subscribe({ topic: "send-mail", fromBeginning: false });
+
+    log("Consumer", "✅ Mail consumer started");
+
+    const { user, pass } = getMailCredentials();
+
+    const transporter = nodemailer.createTransport({
+      host: "smtp.gmail.com",
+      port: 465,
+      secure: true,
+      auth: { user, pass },
+    });
+
+    await consumer.run({
+      autoCommit: false,
+      eachMessage: async ({ topic, partition, message, heartbeat }) => {
+        const raw = message.value?.toString();
+        log(
+          "Consumer",
+          `📥 ${topic} | partition ${partition} | offset ${message.offset}`
+        );
+
+        if (!raw) return;
+
+        try {
+          const { to, subject, html } = JSON.parse(raw);
+
+          if (!to || !subject) throw new Error("Invalid mail payload");
+
+          await transporter.sendMail({
+            from: `"HireHub" <${user}>`,
+            to,
+            subject,
+            html,
+          });
+
+          log("Mail", `📨 Sent to ${to}`);
+        } catch (err) {
+          console.error("❌ Mail send failed:", err);
+          throw err; // Kafka will retry
+        }
+      },
+    });
+  } catch (err) {
+    console.error("❌ Failed to start consumer", err);
+    throw err;
   }
 };

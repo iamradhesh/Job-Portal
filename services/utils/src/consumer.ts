@@ -1,24 +1,29 @@
-import { Kafka } from "kafkajs";
+import { Kafka, logLevel } from "kafkajs";
 import dotenv from "dotenv";
-import fs from "fs";
-import path from "path";
 import nodemailer from "nodemailer";
 
 dotenv.config();
 
-// ---------------- Helper to read cert files ----------------
-const cert = (file: string) => {
-  const certPath = process.env.KAFKA_CERTS_PATH;
-  if (!certPath) {
-    throw new Error("❌ KAFKA_CERTS_PATH is not defined in .env");
+// ---------------- Logging helper ----------------
+const log = (tag: string, ...args: any[]) =>
+  console.log(`[MAIL-CONSUMER][${tag}]`, ...args);
+
+// ---------------- Kafka SSL from ENV ----------------
+const getKafkaSSL = () => {
+  const ca = process.env.KAFKA_CA_CERT;
+  const cert = process.env.KAFKA_CLIENT_CERT;
+  const key = process.env.KAFKA_CLIENT_KEY;
+
+  if (!ca || !cert || !key) {
+    throw new Error("❌ Kafka SSL certificates missing in environment variables");
   }
 
-  const filePath = path.resolve(certPath, file);
-  if (!fs.existsSync(filePath)) {
-    throw new Error(`❌ Cert file not found: ${filePath}`);
-  }
-
-  return fs.readFileSync(filePath, "utf-8");
+  return {
+    rejectUnauthorized: true,
+    ca: [ca],
+    cert,
+    key,
+  };
 };
 
 // ---------------- Validate Gmail credentials ----------------
@@ -27,10 +32,7 @@ const getMailCredentials = () => {
   const pass = process.env.MAIL_PASS;
 
   if (!user || !pass) {
-    throw new Error(
-      "❌ MAIL_USER or MAIL_PASS is missing in .env. " +
-        "Use Gmail App Password, not your normal password."
-    );
+    throw new Error("❌ MAIL_USER or MAIL_PASS missing in environment variables");
   }
 
   return { user, pass };
@@ -39,43 +41,25 @@ const getMailCredentials = () => {
 // ---------------- Kafka Mail Consumer ----------------
 export const startSendMailConsumer = async () => {
   try {
-    // -------- Kafka connection --------
     const kafka = new Kafka({
       clientId: "mail-service",
-      brokers: [process.env.KAFKA_BROKER || "localhost:9092"],
-      ssl: {
-        rejectUnauthorized: true,
-        ca: [cert("ca.pem")],
-        cert: cert("service.cert"),
-        key: cert("service.key"),
-      },
+      brokers: [process.env.KAFKA_BROKER!],
+      ssl: getKafkaSSL(),
+      logLevel: logLevel.INFO,
     });
 
-    const consumer = kafka.consumer({ groupId: "mail-service-group" });
+    const consumer = kafka.consumer({
+      groupId: "mail-service-group",
+      sessionTimeout: 30000,
+      heartbeatInterval: 3000,
+    });
+
     await consumer.connect();
+    await consumer.subscribe({ topic: "send-mail", fromBeginning: false });
 
-    const topicName = "send-mail";
-    await consumer.subscribe({ topic: topicName, fromBeginning: false });
-
-    console.log("✅ Mail Service Consumer Started Listening for Sending Mails");
+    log("STATUS", "✅ Mail consumer started");
 
     const { user, pass } = getMailCredentials();
-
-    // -------- Run consumer --------
-    await consumer.run({
-      eachMessage: async ({ topic, partition, message }) => {
-  try {
-    const value = message.value?.toString();
-     console.log(`📥 Raw message from topic "${topic}":`, message);
-  console.log("Message value string:", message.value?.toString());
-    
-    const data = JSON.parse(value || "{}");
-    const { to, subject, html } = data;
-
-    if (!to || !subject) {
-      console.log("❌ Invalid email payload:", data);
-      return;
-    }
 
     const transporter = nodemailer.createTransport({
       host: "smtp.gmail.com",
@@ -84,21 +68,45 @@ export const startSendMailConsumer = async () => {
       auth: { user, pass },
     });
 
-    await transporter.sendMail({
-      from: `"HireHub" <${user}>`,
-      to,
-      subject,
-      html,
-    });
+    await consumer.run({
+      autoCommit: true,
+      eachMessage: async ({ topic, partition, message }) => {
+        const raw = message.value?.toString();
 
-    console.log(`📨 Mail has been sent to ${to}`);
-  } catch (error) {
-    console.log("❌ Failed to send Mail", error);
-  }
-}
+        log(
+          "RECEIVED",
+          `topic=${topic} partition=${partition} offset=${message.offset}`
+        );
 
+        if (!raw) {
+          log("WARN", "Empty message received");
+          return;
+        }
+
+        try {
+          const data = JSON.parse(raw);
+          const { to, subject, html } = data;
+
+          if (!to || !subject) {
+            throw new Error("Invalid email payload");
+          }
+
+          await transporter.sendMail({
+            from: `"HireHub" <${user}>`,
+            to,
+            subject,
+            html,
+          });
+
+          log("MAIL", `📨 Sent to ${to}`);
+        } catch (err) {
+          console.error("❌ Mail processing failed:", err);
+          throw err; // Kafka will retry
+        }
+      },
     });
   } catch (error) {
-    console.log("❌ Failed to Start Kafka consumer", error);
+    console.error("❌ Failed to start Kafka consumer", error);
+    process.exit(1);
   }
 };
