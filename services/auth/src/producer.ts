@@ -93,57 +93,57 @@ export const publishToTopic = async (topic: string, message: any) => {
 };
 
 // ---------------- Kafka Mail Consumer ----------------
-export const startSendMailConsumer = async () => {
-  try {
-    const kafka = createKafka("mail-service");
-    const consumer = kafka.consumer({ groupId: "mail-service-group" });
+// export const startSendMailConsumer = async () => {
+//   try {
+//     const kafka = createKafka("mail-service");
+//     const consumer = kafka.consumer({ groupId: "mail-service-group" });
 
-    await consumer.connect();
-    await consumer.subscribe({ topic: "send-mail", fromBeginning: false });
+//     await consumer.connect();
+//     await consumer.subscribe({ topic: "send-mail", fromBeginning: false });
 
-    log("Consumer", "✅ Mail consumer started");
+//     log("Consumer", "✅ Mail consumer started");
 
-    const { user, pass } = getMailCredentials();
+//     const { user, pass } = getMailCredentials();
 
-    const transporter = nodemailer.createTransport({
-      host: "smtp.gmail.com",
-      port: 465,
-      secure: true,
-      auth: { user, pass },
-    });
+//     const transporter = nodemailer.createTransport({
+//       host: "smtp.gmail.com",
+//       port: 465,
+//       secure: true,
+//       auth: { user, pass },
+//     });
 
-    await consumer.run({
-      autoCommit: false,
-      eachMessage: async ({ topic, partition, message, heartbeat }) => {
-        const raw = message.value?.toString();
-        log(
-          "Consumer",
-          `📥 ${topic} | partition ${partition} | offset ${message.offset}`
-        );
+//     await consumer.run({
+//       autoCommit: false,
+//       eachMessage: async ({ topic, partition, message, heartbeat }) => {
+//         const raw = message.value?.toString();
+//         log(
+//           "Consumer",
+//           `📥 ${topic} | partition ${partition} | offset ${message.offset}`
+//         );
 
-        if (!raw) return;
+//         if (!raw) return;
 
-        try {
-          const { to, subject, html } = JSON.parse(raw);
+//         try {
+//           const { to, subject, html } = JSON.parse(raw);
 
-          if (!to || !subject) throw new Error("Invalid mail payload");
+//           if (!to || !subject) throw new Error("Invalid mail payload");
 
-          await transporter.sendMail({
-            from: `"HireHub" <${user}>`,
-            to,
-            subject,
-            html,
-          });
+//           await transporter.sendMail({
+//             from: `"HireHub" <${user}>`,
+//             to,
+//             subject,
+//             html,
+//           });
 
-          log("Mail", `📨 Sent to ${to}`);
-        } catch (err) {
-          console.error("❌ Mail send failed:", err);
-          throw err; // Kafka will retry
-        }
-      },
-    });
-  } catch (err) {
-    console.error("❌ Failed to start consumer", err);
-    throw err;
-  }
-};
+//           log("Mail", `📨 Sent to ${to}`);
+//         } catch (err) {
+//           console.error("❌ Mail send failed:", err);
+//           throw err; // Kafka will retry
+//         }
+//       },
+//     });
+//   } catch (err) {
+//     console.error("❌ Failed to start consumer", err);
+//     throw err;
+//   }
+// };
