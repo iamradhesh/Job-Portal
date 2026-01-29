@@ -11,22 +11,24 @@ const log = (prefix: string, ...args: any[]) =>
   console.log(`[${prefix}]`, ...args);
 
 // ---------------- Kafka SSL from ENV ----------------
+// ---------------- Kafka SSL from ENV (Base64) ----------------
 const getKafkaSSL = () => {
-  const ca = process.env.KAFKA_CA_CERT;
-  const cert = process.env.KAFKA_CLIENT_CERT;
-  const key = process.env.KAFKA_CLIENT_KEY;
+  const caB64 = process.env.KAFKA_CA_CERT;
+  const certB64 = process.env.KAFKA_CLIENT_CERT;
+  const keyB64 = process.env.KAFKA_CLIENT_KEY;
 
-  if (!ca || !cert || !key) {
+  if (!caB64 || !certB64 || !keyB64) {
     throw new Error("❌ Kafka SSL certs missing in ENV");
   }
 
   return {
     rejectUnauthorized: true,
-    ca: [ca],
-    cert,
-    key,
+    ca: [Buffer.from(caB64, "base64").toString("utf-8")],
+    cert: Buffer.from(certB64, "base64").toString("utf-8"),
+    key: Buffer.from(keyB64, "base64").toString("utf-8"),
   };
 };
+
 
 // ---------------- Validate Gmail credentials ----------------
 const getMailCredentials = () => {
